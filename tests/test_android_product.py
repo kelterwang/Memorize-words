@@ -80,6 +80,15 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn('ModeCard(TestMode.PARENT', screen.group(0))
         self.assertIn('SectionTitle("测试方式"', screen.group(0))
 
+    def test_wrong_review_can_filter_by_selected_library_folders(self) -> None:
+        dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertIn("bw.batchId IN (:batchIds)", dao)
+        self.assertIn('SectionTitle("选择复测文件夹"', ui)
+        self.assertIn("selectedBatchIds.isNotEmpty() && !state.isBusy", ui)
+        self.assertIn('Text("全选")', ui)
+        self.assertIn('Text("清空")', ui)
+
     def test_library_rename_is_shared_with_wrong_word_categories(self) -> None:
         dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
         ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")

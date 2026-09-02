@@ -89,13 +89,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         refreshActive()
     }
 
-    fun startWrongReview(days: Int, onReady: (Long) -> Unit) = launchBusy {
+    fun startWrongReview(days: Int, batchIds: Set<Long>, onReady: (Long) -> Unit) = launchBusy {
         val end = System.currentTimeMillis()
         val start = end - days * 86_400_000L
-        when (val result = repository.createWrongReview(start, end, mutable.value.selectedMode)) {
+        when (val result = repository.createWrongReview(start, end, mutable.value.selectedMode, batchIds.toList())) {
             is CreateSessionResult.Created -> onReady(result.sessionId)
             is CreateSessionResult.AlreadyInProgress -> onReady(result.sessionId)
-            CreateSessionResult.Empty -> mutable.update { it.copy(message = "这个时间范围内没有待复测错词") }
+            CreateSessionResult.Empty -> mutable.update { it.copy(message = "所选文件夹和时间范围内没有待复测错词") }
         }
         refreshActive()
     }

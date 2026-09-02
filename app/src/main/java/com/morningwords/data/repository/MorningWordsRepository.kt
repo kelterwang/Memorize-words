@@ -136,9 +136,12 @@ class MorningWordsRepository(
         CreateSessionResult.Created(sessionId)
     }
 
-    suspend fun createWrongReview(start: Long, end: Long, mode: TestMode): CreateSessionResult = db.withTransaction {
+    suspend fun createWrongReview(start: Long, end: Long, mode: TestMode, batchIds: List<Long>): CreateSessionResult = db.withTransaction {
         dao.activeSession()?.let { return@withTransaction CreateSessionResult.AlreadyInProgress(it.id) }
-        val wordIds = dao.reviewWordIds(start, end)
+        val existingBatchIds = dao.getBatches().mapTo(mutableSetOf()) { it.id }
+        val selectedBatchIds = batchIds.distinct().filter { it in existingBatchIds }
+        if (selectedBatchIds.isEmpty()) return@withTransaction CreateSessionResult.Empty
+        val wordIds = dao.reviewWordIds(start, end, selectedBatchIds)
         if (wordIds.isEmpty()) return@withTransaction CreateSessionResult.Empty
         val now = clock()
         val sessionId = dao.insertSession(
@@ -153,6 +156,9 @@ class MorningWordsRepository(
                 roundNumber = 1,
             )
         )
+        dao.insertSessionBatches(selectedBatchIds.mapIndexed { index, id ->
+            SessionBatchEntity(sessionId = sessionId, batchId = id, selectionOrder = index)
+        })
         dao.insertSessionWords(wordIds.mapIndexed { index, id ->
             SessionWordEntity(sessionId = sessionId, wordId = id, displayOrder = index, requiredMeaningSnapshot = null, queueState = SessionWordQueueState.QUEUED, queueOrder = index)
         })

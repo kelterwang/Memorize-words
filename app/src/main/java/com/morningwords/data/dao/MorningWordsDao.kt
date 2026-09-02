@@ -75,8 +75,19 @@ interface MorningWordsDao {
     @Query("SELECT COUNT(*) FROM WordBatch") fun observeBatchCount(): Flow<Int>
     @Query("SELECT COUNT(*) FROM Word") fun observeWordCount(): Flow<Int>
 
-    @Query("SELECT wr.wordId FROM WrongRecord wr JOIN WrongWord ww ON ww.wordId=wr.wordId WHERE wr.recordType='FIRST_ROUND_WRONG' AND wr.wrongAt BETWEEN :start AND :end AND ww.status='ACTIVE' GROUP BY wr.wordId ORDER BY MAX(wr.wrongAt) DESC")
-    suspend fun reviewWordIds(start: Long, end: Long): List<Long>
+    @Query("""
+        SELECT wr.wordId
+        FROM WrongRecord wr
+        JOIN WrongWord ww ON ww.wordId=wr.wordId
+        JOIN BatchWord bw ON bw.wordId=wr.wordId
+        WHERE wr.recordType='FIRST_ROUND_WRONG'
+          AND wr.wrongAt BETWEEN :start AND :end
+          AND ww.status='ACTIVE'
+          AND bw.batchId IN (:batchIds)
+        GROUP BY wr.wordId
+        ORDER BY MAX(wr.wrongAt) DESC
+    """)
+    suspend fun reviewWordIds(start: Long, end: Long, batchIds: List<Long>): List<Long>
 
     @Query("SELECT COUNT(*) FROM SessionBatch sb JOIN TestSession ts ON ts.id=sb.sessionId WHERE sb.batchId=:batchId AND ts.status='IN_PROGRESS'")
     suspend fun activeBatchReferences(batchId: Long): Int

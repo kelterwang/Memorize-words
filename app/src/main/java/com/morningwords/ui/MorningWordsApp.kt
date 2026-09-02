@@ -617,9 +617,49 @@ private fun DetailItem(label: String, value: String) {
 @Composable
 private fun WrongReviewSetup(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
     var days by remember { mutableIntStateOf(30) }
+    var selectedBatchIds by remember { mutableStateOf(emptySet<Long>()) }
+    var selectionInitialized by remember { mutableStateOf(false) }
+    LaunchedEffect(state.wrongWordGroups) {
+        val available = state.wrongWordGroups.mapTo(mutableSetOf()) { it.batchId }
+        if (!selectionInitialized && available.isNotEmpty()) {
+            selectedBatchIds = available
+            selectionInitialized = true
+        } else {
+            selectedBatchIds = selectedBatchIds intersect available
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         BackHeader("错词复测", nav)
         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionTitle("选择复测文件夹", "只复测勾选词库中的错词")
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { selectedBatchIds = state.wrongWordGroups.mapTo(mutableSetOf()) { it.batchId } }) { Text("全选") }
+                    TextButton(onClick = { selectedBatchIds = emptySet() }) { Text("清空") }
+                }
+            }
+            items(state.wrongWordGroups, key = { "review-folder-${it.batchId}" }) { group ->
+                val selected = group.batchId in selectedBatchIds
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (selected) SageSoft else Paper,
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        selectedBatchIds = if (selected) selectedBatchIds - group.batchId else selectedBatchIds + group.batchId
+                    },
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = selected,
+                            onCheckedChange = { checked -> selectedBatchIds = if (checked) selectedBatchIds + group.batchId else selectedBatchIds - group.batchId },
+                        )
+                        Column(Modifier.padding(start = 8.dp)) {
+                            Text(group.batchName, fontWeight = FontWeight.SemiBold)
+                            Text("${group.words.size} 个错词", color = Coral, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
             item { SectionTitle("选择错误发生时间", "只复测所选时间范围内的错词") }
             items(listOf(1 to "最近 1 天", 30 to "最近 1 个月", 90 to "最近 3 个月")) { (value, label) ->
                 Surface(shape = RoundedCornerShape(18.dp), color = if (days == value) SageSoft else Paper, modifier = Modifier.fillMaxWidth().clickable { days = value }) {
@@ -635,7 +675,11 @@ private fun WrongReviewSetup(state: AppUiState, vm: AppViewModel, nav: NavHostCo
             }
             item { Text("复测中可以选择“会（移出错词库）”；所有历史记录仍会保留。", color = Ink.copy(.58f), style = MaterialTheme.typography.bodySmall) }
             item {
-                Button(onClick = { vm.startWrongReview(days) { nav.navigate("test/$it") } }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("开始复测", modifier = Modifier.padding(7.dp)) }
+                Button(
+                    onClick = { vm.startWrongReview(days, selectedBatchIds) { nav.navigate("test/$it") } },
+                    enabled = selectedBatchIds.isNotEmpty() && !state.isBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (selectedBatchIds.isEmpty()) "请先选择复测文件夹" else "开始复测", modifier = Modifier.padding(7.dp)) }
             }
         }
     }
