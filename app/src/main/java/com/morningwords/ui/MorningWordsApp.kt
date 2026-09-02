@@ -588,15 +588,24 @@ private fun WrongReviewSetup(state: AppUiState, vm: AppViewModel, nav: NavHostCo
     var days by remember { mutableIntStateOf(30) }
     Column(Modifier.fillMaxSize()) {
         BackHeader("错词复测", nav)
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("选择错误发生时间", style = MaterialTheme.typography.titleLarge)
-            listOf(1 to "最近 1 天", 30 to "最近 1 个月", 90 to "最近 3 个月").forEach { (value, label) ->
+        LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item { SectionTitle("选择错误发生时间", "只复测所选时间范围内的错词") }
+            items(listOf(1 to "最近 1 天", 30 to "最近 1 个月", 90 to "最近 3 个月")) { (value, label) ->
                 Surface(shape = RoundedCornerShape(18.dp), color = if (days == value) SageSoft else Paper, modifier = Modifier.fillMaxWidth().clickable { days = value }) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) { RadioButton(days == value, { days = value }); Text(label, modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.SemiBold) }
                 }
             }
-            Text("复测中可以选择“会（移出错词库）”；所有历史记录仍会保留。", color = Ink.copy(.58f), style = MaterialTheme.typography.bodySmall)
-            Button(onClick = { vm.startWrongReview(days) { nav.navigate("test/$it") } }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("开始复测", modifier = Modifier.padding(7.dp)) }
+            item {
+                SectionTitle("测试方式", "学生自测隐藏答案，家长考我直接显示答案")
+                Spacer(Modifier.height(10.dp))
+                ModeCard(TestMode.STUDENT, state.selectedMode, "学生自测", "作答前隐藏中文释义", vm)
+                Spacer(Modifier.height(8.dp))
+                ModeCard(TestMode.PARENT, state.selectedMode, "家长考我", "直接展示完整答案", vm)
+            }
+            item { Text("复测中可以选择“会（移出错词库）”；所有历史记录仍会保留。", color = Ink.copy(.58f), style = MaterialTheme.typography.bodySmall) }
+            item {
+                Button(onClick = { vm.startWrongReview(days) { nav.navigate("test/$it") } }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("开始复测", modifier = Modifier.padding(7.dp)) }
+            }
         }
     }
 }

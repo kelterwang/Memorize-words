@@ -72,6 +72,14 @@ class AndroidProductStructureTest(unittest.TestCase):
             with self.subTest(configuration=configuration):
                 self.assertIn(configuration, source)
 
+    def test_wrong_review_offers_student_and_parent_modes(self) -> None:
+        source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        screen = re.search(r"private fun WrongReviewSetup\(.*?\n\}\n\n@Composable", source, re.DOTALL)
+        self.assertIsNotNone(screen)
+        self.assertIn('ModeCard(TestMode.STUDENT', screen.group(0))
+        self.assertIn('ModeCard(TestMode.PARENT', screen.group(0))
+        self.assertIn('SectionTitle("测试方式"', screen.group(0))
+
 
 if __name__ == "__main__":
     unittest.main()
