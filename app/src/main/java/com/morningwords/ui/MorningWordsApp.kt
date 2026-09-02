@@ -306,7 +306,7 @@ private fun SetupScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
 private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
     val session = state.session
     if (session == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
-    if (session.session.phase == TestPhase.ROUND_SUMMARY) {
+    if (session.session.phase == TestPhase.ROUND_SUMMARY && state.feedbackCard == null) {
         RoundSummaryScreen(session, state.isBusy, vm, nav)
         return
     }
@@ -388,7 +388,7 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
         }
         Spacer(Modifier.height(16.dp))
         if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
-            Button(onClick = vm::continueAfterAnswer, modifier = Modifier.fillMaxWidth()) { Text("继续晨测", modifier = Modifier.padding(7.dp)) }
+            Button(onClick = vm::continueAfterAnswer, modifier = Modifier.fillMaxWidth()) { Text("确定", modifier = Modifier.padding(7.dp)) }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = { vm.answer(TestResult.UNKNOWN) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("不会", modifier = Modifier.padding(7.dp), color = Coral) }
@@ -513,7 +513,6 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
         item {
             SettingsGroup("测试体验") {
                 SettingsSwitch("自动朗读英文", state.settings.autoPronounce, vm::setAutoPronounce)
-                HorizontalDivider(); SettingsSwitch("答“会”后展示答案", state.settings.showAnswerAfterKnow, vm::setShowAnswer)
                 HorizontalDivider(); SettingsSwitch("大号单词字体", state.settings.largeFont, vm::setLargeFont)
             }
         }

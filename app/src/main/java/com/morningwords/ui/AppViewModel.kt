@@ -10,7 +10,6 @@ import com.morningwords.data.settings.AppSettings
 import com.morningwords.domain.importer.ImportPreview
 import com.morningwords.domain.model.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class AppUiState(
@@ -109,14 +108,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val next = repository.answer(sessionId, result)
             val showFeedback = shouldShowAnswerFeedback(
                 result = result,
-                showAnswerAfterKnow = mutable.value.settings.showAnswerAfterKnow,
-                nextPhase = next.session.phase,
             )
             mutable.update { it.copy(session = next, feedbackCard = if (showFeedback) answeredCard else null, answerVisible = showFeedback) }
-            if (showFeedback && result == TestResult.KNOW) {
-                delay(700)
-                mutable.update { it.copy(feedbackCard = null, answerVisible = false) }
-            }
             refreshActive()
         }
     }
@@ -167,10 +160,4 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
-internal fun shouldShowAnswerFeedback(
-    result: TestResult,
-    showAnswerAfterKnow: Boolean,
-    nextPhase: TestPhase,
-): Boolean = result == TestResult.KNOW &&
-    showAnswerAfterKnow &&
-    nextPhase != TestPhase.ROUND_SUMMARY
+internal fun shouldShowAnswerFeedback(result: TestResult): Boolean = result == TestResult.KNOW
