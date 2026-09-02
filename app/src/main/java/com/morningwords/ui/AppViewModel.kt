@@ -41,7 +41,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             combine(repository.dashboard, repository.batches, repository.wrongWords, settingsRepository.settings) { dashboard, batches, wrong, settings ->
                 Quad(dashboard, batches, wrong, settings)
             }.collect { data ->
-                mutable.update { it.copy(dashboard = data.a, batches = data.b, wrongWords = data.c, settings = data.d, selectedMode = if (it.selectedMode == TestMode.STUDENT) data.d.defaultTestMode else it.selectedMode) }
+                val availableBatchIds = data.b.mapTo(mutableSetOf()) { it.id }
+                mutable.update {
+                    it.copy(
+                        dashboard = data.a,
+                        batches = data.b,
+                        wrongWords = data.c,
+                        settings = data.d,
+                        selectedBatchIds = it.selectedBatchIds intersect availableBatchIds,
+                        selectedMode = if (it.selectedMode == TestMode.STUDENT) data.d.defaultTestMode else it.selectedMode,
+                    )
+                }
             }
         }
         refreshActive()

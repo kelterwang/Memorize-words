@@ -97,7 +97,8 @@ class MorningWordsRepository(
 
     suspend fun createDailySession(batchIds: List<Long>, mode: TestMode): CreateSessionResult = db.withTransaction {
         dao.activeSession()?.let { return@withTransaction CreateSessionResult.AlreadyInProgress(it.id) }
-        val orderedBatchIds = batchIds.distinct()
+        val existingBatchIds = dao.getBatches().mapTo(mutableSetOf()) { it.id }
+        val orderedBatchIds = batchIds.distinct().filter { it in existingBatchIds }
         val candidates = orderedBatchIds.flatMap { dao.batchWords(it) }
         val unique = candidates.distinctBy { it.wordId }
         if (unique.isEmpty()) return@withTransaction CreateSessionResult.Empty

@@ -94,4 +94,22 @@ class MorningWordsRepositoryTest {
         repository.createDailySession(listOf(batch), TestMode.PARENT)
         assertTrue(!repository.deleteBatch(batch))
     }
+
+    @Test fun staleDeletedBatchSelectionIsIgnoredWhenStarting() = runTest {
+        val deletedBatch = repository.importBatch("已删除", "obsolete")
+        assertTrue(repository.deleteBatch(deletedBatch))
+        val currentBatch = repository.importBatch("当前", "achieve\nmaintain")
+
+        val result = repository.createDailySession(listOf(deletedBatch, currentBatch), TestMode.STUDENT)
+
+        val sessionId = (result as CreateSessionResult.Created).sessionId
+        assertEquals(2, repository.loadSession(sessionId)?.session?.totalCount)
+    }
+
+    @Test fun onlyStaleDeletedSelectionsProduceEmptyResult() = runTest {
+        val deletedBatch = repository.importBatch("已删除", "obsolete")
+        assertTrue(repository.deleteBatch(deletedBatch))
+
+        assertEquals(CreateSessionResult.Empty, repository.createDailySession(listOf(deletedBatch), TestMode.STUDENT))
+    }
 }
