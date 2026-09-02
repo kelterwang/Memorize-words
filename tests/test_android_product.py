@@ -107,6 +107,12 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn("repairImportedWordFields", repository)
         self.assertIn("repository.repairImportedWordFields()", view_model)
 
+    def test_examples_highlight_the_current_word(self) -> None:
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertGreaterEqual(ui.count("highlightedExample("), 3)
+        self.assertIn("ExampleWordRed", ui)
+        self.assertIn("findExampleWordRanges", ui)
+
 
 if __name__ == "__main__":
     unittest.main()

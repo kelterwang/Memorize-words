@@ -23,8 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +52,7 @@ private val Sage = Color(0xFF54715A)
 private val SageSoft = Color(0xFFDDE8DA)
 private val Coral = Color(0xFFB95F4B)
 private val Gold = Color(0xFFE7B75D)
+private val ExampleWordRed = Color(0xFFD32F2F)
 
 @Composable
 fun MorningWordsApp(viewModel: AppViewModel) {
@@ -438,7 +443,14 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
                         animatedCard.partOfSpeech?.let { Text(it, color = Sage, fontWeight = FontWeight.Bold) }
                         animatedCard.requiredMeaning?.let { Text(it, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)) }
                         if (animatedCard.meaning != animatedCard.requiredMeaning) animatedCard.meaning?.let { Text(it, textAlign = TextAlign.Center, color = Ink.copy(alpha = .7f), modifier = Modifier.padding(top = 8.dp)) }
-                        animatedCard.example?.let { Text(it, textAlign = TextAlign.Center, color = Ink.copy(alpha = .6f), modifier = Modifier.padding(top = 12.dp)) }
+                        animatedCard.example?.let {
+                            Text(
+                                highlightedExample(it, animatedCard.word),
+                                textAlign = TextAlign.Center,
+                                color = Ink.copy(alpha = .6f),
+                                modifier = Modifier.padding(top = 12.dp),
+                            )
+                        }
                     } else Text("想好后再作答", color = Ink.copy(alpha = .38f), modifier = Modifier.padding(top = 28.dp))
                 }
             }
@@ -598,20 +610,60 @@ private fun WrongWordDetailScreen(row: WrongWordRow?, nav: NavHostController) {
                 }
                 item { DetailItem("词性", row.word.partOfSpeech ?: "暂无词性") }
                 item { DetailItem("释义", row.word.meaning ?: "暂无释义") }
-                item { DetailItem("例句", row.word.example ?: "暂无例句") }
+                item { DetailItem("例句", row.word.example ?: "暂无例句", row.word.word) }
             }
         }
     }
 }
 
 @Composable
-private fun DetailItem(label: String, value: String) {
+private fun DetailItem(label: String, value: String, highlightWord: String? = null) {
     Surface(shape = RoundedCornerShape(18.dp), color = Paper, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp)) {
             Text(label, color = Sage, style = MaterialTheme.typography.labelLarge)
-            Text(value, modifier = Modifier.padding(top = 7.dp), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                highlightWord?.let { highlightedExample(value, it) } ?: AnnotatedString(value),
+                modifier = Modifier.padding(top = 7.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
         }
     }
+}
+
+internal fun highlightedExample(example: String, word: String): AnnotatedString {
+    val matches = findExampleWordRanges(example, word)
+    if (matches.isEmpty()) return AnnotatedString(example)
+    return buildAnnotatedString {
+        var cursor = 0
+        matches.forEach { range ->
+            append(example.substring(cursor, range.first))
+            withStyle(SpanStyle(color = ExampleWordRed, fontWeight = FontWeight.Bold)) {
+                append(example.substring(range.first, range.last + 1))
+            }
+            cursor = range.last + 1
+        }
+        append(example.substring(cursor))
+    }
+}
+
+internal fun findExampleWordRanges(example: String, word: String): List<IntRange> {
+    val base = word.trim()
+    if (base.isEmpty()) return emptyList()
+    val variants = linkedSetOf(base, "${base}s", "${base}es", "${base}d", "${base}ed", "${base}ing")
+    if (base.endsWith("e", ignoreCase = true) && base.length > 1) variants += base.dropLast(1) + "ing"
+    if (base.endsWith("y", ignoreCase = true) && base.length > 1) {
+        variants += base.dropLast(1) + "ies"
+        variants += base.dropLast(1) + "ied"
+    }
+    if (base.length >= 3 && base.last().lowercaseChar() !in "aeiouwxy" && base[base.lastIndex - 1].lowercaseChar() in "aeiou") {
+        variants += base + base.last() + "ed"
+        variants += base + base.last() + "ing"
+    }
+    val alternatives = variants.sortedByDescending(String::length).joinToString("|") { Regex.escape(it) }
+    return Regex("(?<![A-Za-z])(?:$alternatives)(?![A-Za-z])", RegexOption.IGNORE_CASE)
+        .findAll(example)
+        .map { it.range }
+        .toList()
 }
 
 @Composable
