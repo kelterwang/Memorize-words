@@ -1,0 +1,37 @@
+# 晨词（MorningWords）
+
+面向高中生的离线 Android 单词晨测 App。产品严格以仓库中的 `设计文档.md` 与 `技术方案文档.md` 为实现基线。
+
+## 已实现
+
+- 纯文本与“单词 + 释义”导入预览，批内/跨批次规范化去重
+- 批次列表、安全删除与多批次组合测试
+- 学生自测、家长考我两种模式
+- `FIRST_ROUND → WRONG_LOOP → FINAL_CHECK` 完整晨测状态机
+- Room 逐题事务持久化、进行中任务恢复与明确放弃
+- 长期错词累计、复测时间范围与 `KNOW / UNKNOWN / MASTERED` 三种作答
+- DataStore 偏好、系统 TTS 自动/手动发音
+- Compose Material 3 四入口界面：今日、词库、错词、我的
+
+## 构建
+
+需要 JDK 17 与 Android SDK 36：
+
+```bash
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew assembleDebug
+```
+
+连接 Android 设备或启动模拟器后：
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
+Debug APK 生成在 `app/build/outputs/apk/debug/app-debug.apk`。
+
+## 数据原则
+
+业务事实只保存在 Room；DataStore 仅保存偏好。正常晨测只有首轮“不会”增加长期错词次数。批次删除或错词标记为已掌握都不会删除历史测试与错误记录。
+
