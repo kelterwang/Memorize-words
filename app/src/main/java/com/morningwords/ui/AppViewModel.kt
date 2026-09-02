@@ -108,18 +108,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun revealAnswer() = mutable.update { it.copy(answerVisible = true) }
 
     fun answer(result: TestResult) {
-        val sessionId = mutable.value.session?.session?.id ?: return
-        if (mutable.value.isBusy) return
-        launchBusy {
-            val answeredCard = mutable.value.session?.current
-            val next = repository.answer(sessionId, result)
-            val showFeedback = shouldShowAnswerFeedback(
-                mode = next.session.mode,
-                result = result,
-            )
-            mutable.update { it.copy(session = next, feedbackCard = if (showFeedback) answeredCard else null, answerVisible = showFeedback) }
-            refreshActive()
+        val current = mutable.value
+        val session = current.session ?: return
+        if (current.isBusy) return
+        if (needsStudentAnswerConfirmation(session.session.mode, result)) {
+            mutable.update { it.copy(feedbackCard = session.current, answerVisible = true) }
+            return
         }
+        submitAnswer(result)
+    }
+
+    fun confirmSelfAssessment(isCorrect: Boolean) {
+        val current = mutable.value
+        if (current.isBusy || !current.answerVisible || current.session?.session?.mode != TestMode.STUDENT) return
+        submitAnswer(if (isCorrect) TestResult.KNOW else TestResult.UNKNOWN)
     }
 
     fun retryWrongAnswers() {
@@ -135,10 +137,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             mutable.update { it.copy(session = repository.completeFromSummary(sessionId), feedbackCard = null, answerVisible = false, activeSessionId = null) }
             onDone()
         }
-    }
-
-    fun continueAfterAnswer() = viewModelScope.launch {
-        mutable.value.session?.session?.id?.let { id -> mutable.update { it.copy(session = repository.loadSession(id), feedbackCard = null, answerVisible = false) } }
     }
 
     fun abandon(onDone: () -> Unit) = launchBusy {
@@ -164,6 +162,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun clearMessage() = mutable.update { it.copy(message = null) }
     fun showMessage(message: String) = mutable.update { it.copy(message = message) }
 
+    private fun submitAnswer(result: TestResult) {
+        val sessionId = mutable.value.session?.session?.id ?: return
+        if (mutable.value.isBusy) return
+        mutable.update { it.copy(isBusy = true, message = null) }
+        viewModelScope.launch {
+            runCatching { repository.answer(sessionId, result) }
+                .onSuccess { next ->
+                    mutable.update { it.copy(session = next, feedbackCard = null, answerVisible = false) }
+                    refreshActive()
+                }
+                .onFailure { error -> mutable.update { it.copy(message = error.message ?: "操作失败，请重试") } }
+            mutable.update { it.copy(isBusy = false) }
+        }
+    }
+
     private fun launchBusy(block: suspend () -> Unit) = viewModelScope.launch {
         mutable.update { it.copy(isBusy = true, message = null) }
         runCatching { block() }.onFailure { error -> mutable.update { it.copy(message = error.message ?: "操作失败，请重试") } }
@@ -173,5 +186,5 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
-internal fun shouldShowAnswerFeedback(mode: TestMode, result: TestResult): Boolean =
+internal fun needsStudentAnswerConfirmation(mode: TestMode, result: TestResult): Boolean =
     mode == TestMode.STUDENT && result == TestResult.KNOW

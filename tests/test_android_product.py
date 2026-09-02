@@ -46,7 +46,7 @@ class AndroidProductStructureTest(unittest.TestCase):
         for route in ["home", "library", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/batch/{batchId}", "wrong/word/{wordId}", "wrong/review", "settings"]:
             self.assertIn(f'composable("{route}")', source)
 
-    def test_known_answer_confirmation_stays_in_right_action_slot(self) -> None:
+    def test_known_answer_requires_correct_or_wrong_self_assessment(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
         confirmation = re.search(
             r"if \(state\.answerVisible.*?\}\s*else \{",
@@ -54,11 +54,14 @@ class AndroidProductStructureTest(unittest.TestCase):
             re.DOTALL,
         )
         self.assertIsNotNone(confirmation)
-        self.assertIn("Spacer(Modifier.weight(1f))", confirmation.group(0))
-        self.assertIn(
-            "Button(onClick = vm::continueAfterAnswer, modifier = Modifier.weight(1f))",
-            confirmation.group(0),
-        )
+        self.assertIn("vm.confirmSelfAssessment(false)", confirmation.group(0))
+        self.assertIn('Text("我错了"', confirmation.group(0))
+        self.assertIn("vm.confirmSelfAssessment(true)", confirmation.group(0))
+        self.assertIn('Text("我对了"', confirmation.group(0))
+
+        view_model = (ROOT / "app/src/main/java/com/morningwords/ui/AppViewModel.kt").read_text(encoding="utf-8")
+        self.assertIn("needsStudentAnswerConfirmation(session.session.mode, result)", view_model)
+        self.assertIn("submitAnswer(if (isCorrect) TestResult.KNOW else TestResult.UNKNOWN)", view_model)
 
     def test_pronunciation_uses_clear_speech_configuration(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")

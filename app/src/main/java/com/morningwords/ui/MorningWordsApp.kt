@@ -458,8 +458,16 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
         Spacer(Modifier.height(16.dp))
         if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Spacer(Modifier.weight(1f))
-                Button(onClick = vm::continueAfterAnswer, modifier = Modifier.weight(1f)) { Text("确定", modifier = Modifier.padding(7.dp)) }
+                OutlinedButton(
+                    onClick = { vm.confirmSelfAssessment(false) },
+                    enabled = !state.isBusy,
+                    modifier = Modifier.weight(1f),
+                ) { Text("我错了", modifier = Modifier.padding(7.dp), color = Coral) }
+                Button(
+                    onClick = { vm.confirmSelfAssessment(true) },
+                    enabled = !state.isBusy,
+                    modifier = Modifier.weight(1f),
+                ) { Text("我对了", modifier = Modifier.padding(7.dp)) }
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
