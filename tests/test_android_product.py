@@ -97,6 +97,16 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn('Text("导入时间 ${formatImportTime(batch.createdAt)}"', ui)
         self.assertIn('Icon(Icons.Outlined.Edit, "修改名称")', ui)
 
+    def test_import_separates_and_repairs_word_details(self) -> None:
+        importer = (ROOT / "app/src/main/java/com/morningwords/domain/importer/WordImporter.kt").read_text(encoding="utf-8")
+        repository = (ROOT / "app/src/main/java/com/morningwords/data/repository/MorningWordsRepository.kt").read_text(encoding="utf-8")
+        view_model = (ROOT / "app/src/main/java/com/morningwords/ui/AppViewModel.kt").read_text(encoding="utf-8")
+        self.assertIn("val example: String? = null", importer)
+        self.assertIn("splitMeaningAndExample", importer)
+        self.assertIn("example = line.example", repository)
+        self.assertIn("repairImportedWordFields", repository)
+        self.assertIn("repository.repairImportedWordFields()", view_model)
+
 
 if __name__ == "__main__":
     unittest.main()

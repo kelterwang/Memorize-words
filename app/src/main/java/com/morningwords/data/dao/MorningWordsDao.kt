@@ -10,10 +10,14 @@ interface MorningWordsDao {
     @Query("SELECT * FROM Word WHERE normalizedWord = :normalized LIMIT 1")
     suspend fun findWord(normalized: String): WordEntity?
 
+    @Query("SELECT * FROM Word WHERE id = :id LIMIT 1")
+    suspend fun word(id: Long): WordEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertWord(value: WordEntity): Long
     @Update suspend fun updateWord(value: WordEntity)
     @Insert suspend fun insertBatch(value: WordBatchEntity): Long
     @Insert suspend fun insertBatchWord(value: BatchWordEntity): Long
+    @Update suspend fun updateBatchWord(value: BatchWordEntity)
     @Query("UPDATE WordBatch SET batchName=:name WHERE id=:batchId")
     suspend fun renameBatch(batchId: Long, name: String): Int
 
@@ -31,6 +35,9 @@ interface MorningWordsDao {
 
     @Query("SELECT * FROM BatchWord WHERE batchId=:batchId ORDER BY sortOrder")
     suspend fun batchWords(batchId: Long): List<BatchWordEntity>
+
+    @Query("SELECT * FROM BatchWord ORDER BY id")
+    suspend fun allBatchWords(): List<BatchWordEntity>
 
     @Query("SELECT * FROM Word WHERE id IN (:ids)") suspend fun wordsByIds(ids: List<Long>): List<WordEntity>
     @Query("SELECT * FROM TestSession WHERE status='IN_PROGRESS' ORDER BY updatedAt DESC LIMIT 1")

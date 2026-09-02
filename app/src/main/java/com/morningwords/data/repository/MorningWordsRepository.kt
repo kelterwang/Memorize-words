@@ -64,6 +64,7 @@ class MorningWordsRepository(
                         normalizedWord = normalized,
                         partOfSpeech = line.partOfSpeech,
                         meaning = line.meaning,
+                        example = line.example,
                         createdAt = now,
                         updatedAt = now,
                     )
@@ -72,6 +73,7 @@ class MorningWordsRepository(
                 val merged = existing.copy(
                     partOfSpeech = existing.partOfSpeech ?: line.partOfSpeech,
                     meaning = existing.meaning ?: line.meaning,
+                    example = existing.example ?: line.example,
                     updatedAt = now,
                 )
                 if (merged != existing) dao.updateWord(merged)
@@ -88,6 +90,22 @@ class MorningWordsRepository(
             )
         }
         batchId
+    }
+
+    /** Repairs rows imported by older versions that kept POS and examples inside meaning. */
+    suspend fun repairImportedWordFields() = db.withTransaction {
+        val repairedWordIds = mutableSetOf<Long>()
+        dao.allBatchWords().forEach { batchWord ->
+            val rawText = batchWord.rawText ?: return@forEach
+            val parsed = WordImporter.parseText(rawText).accepted.singleOrNull() ?: return@forEach
+            if (batchWord.requiredMeaning != parsed.requiredMeaning) {
+                dao.updateBatchWord(batchWord.copy(requiredMeaning = parsed.requiredMeaning))
+            }
+            if (!repairedWordIds.add(batchWord.wordId)) return@forEach
+            val existing = dao.word(batchWord.wordId) ?: return@forEach
+            val repaired = repairWordFromRaw(existing, parsed, clock())
+            if (repaired != existing) dao.updateWord(repaired)
+        }
     }
 
     suspend fun deleteBatch(batchId: Long): Boolean = db.withTransaction {
@@ -313,6 +331,15 @@ class MorningWordsRepository(
         }
         TestPhase.ROUND_SUMMARY, TestPhase.COMPLETED -> null
     }
+}
+
+internal fun repairWordFromRaw(existing: WordEntity, parsed: com.morningwords.domain.importer.ImportLine, now: Long): WordEntity {
+    val repaired = existing.copy(
+        partOfSpeech = existing.partOfSpeech ?: parsed.partOfSpeech,
+        meaning = parsed.meaning ?: existing.meaning,
+        example = parsed.example ?: existing.example,
+    )
+    return if (repaired == existing) existing else repaired.copy(updatedAt = now)
 }
 
 internal fun groupWrongWordsByBatch(

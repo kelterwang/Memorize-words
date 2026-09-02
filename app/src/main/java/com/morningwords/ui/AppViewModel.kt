@@ -37,6 +37,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val state: StateFlow<AppUiState> = mutable.asStateFlow()
 
     init {
+        viewModelScope.launch { repository.repairImportedWordFields() }
         viewModelScope.launch {
             combine(repository.dashboard, repository.batches, repository.wrongWords, settingsRepository.settings) { dashboard, batches, wrong, settings ->
                 Quad(dashboard, batches, wrong, settings)
