@@ -127,6 +127,18 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn("ExampleWordRed", ui)
         self.assertIn("findExampleWordRanges", ui)
 
+    def test_home_uses_time_greeting_and_persisted_non_repeating_quote(self) -> None:
+        motivation = (ROOT / "app/src/main/java/com/morningwords/domain/motivation/DailyMotivation.kt").read_text(encoding="utf-8")
+        settings = (ROOT / "app/src/main/java/com/morningwords/data/settings/SettingsRepository.kt").read_text(encoding="utf-8")
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertIn("fun greetingForHour(hour: Int)", motivation)
+        self.assertIn("fun selectDailyQuote(", motivation)
+        self.assertEqual(31, len(re.findall(r'^\s+".+",$', motivation, re.MULTILINE)))
+        self.assertIn('stringPreferencesKey("dailyQuoteDate")', settings)
+        self.assertIn('stringPreferencesKey("dailyQuoteRemaining")', settings)
+        self.assertIn("Text(state.greeting", ui)
+        self.assertIn("Text(state.dailyQuote", ui)
+
 
 if __name__ == "__main__":
     unittest.main()

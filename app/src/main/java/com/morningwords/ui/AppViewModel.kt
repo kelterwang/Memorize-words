@@ -10,11 +10,16 @@ import com.morningwords.data.repository.*
 import com.morningwords.data.settings.AppSettings
 import com.morningwords.domain.importer.ImportPreview
 import com.morningwords.domain.model.*
+import com.morningwords.domain.motivation.DAILY_QUOTES
+import com.morningwords.domain.motivation.greetingForHour
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 
 data class AppUiState(
     val dashboard: Dashboard = Dashboard(0, 0, 0),
+    val greeting: String = greetingForHour(LocalTime.now().hour),
+    val dailyQuote: String = DAILY_QUOTES.first(),
     val batches: List<BatchSummary> = emptyList(),
     val batchDetailId: Long? = null,
     val batchDetailWords: List<WordEntity> = emptyList(),
@@ -42,6 +47,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { repository.repairImportedWordFields() }
+        refreshHomeMessage()
         viewModelScope.launch {
             combine(repository.dashboard, repository.batches, repository.wrongWords, settingsRepository.settings) { dashboard, batches, wrong, settings ->
                 Quad(dashboard, batches, wrong, settings)
@@ -69,6 +75,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshActive() = viewModelScope.launch {
         mutable.update { it.copy(activeSessionId = repository.activeSessionId()) }
+    }
+
+    fun refreshHomeMessage() {
+        mutable.update { it.copy(greeting = greetingForHour(LocalTime.now().hour)) }
+        viewModelScope.launch {
+            val quote = settingsRepository.dailyQuote()
+            mutable.update { it.copy(dailyQuote = quote) }
+        }
     }
 
     fun preview(text: String) { mutable.update { it.copy(importPreview = repository.previewImport(text), message = null) } }

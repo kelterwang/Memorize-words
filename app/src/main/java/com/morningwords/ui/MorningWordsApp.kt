@@ -137,14 +137,15 @@ private fun AppBottomBar(nav: NavHostController, current: String) {
 
 @Composable
 private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
+    LaunchedEffect(Unit) { vm.refreshHomeMessage() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
-            Text("早上好", style = MaterialTheme.typography.labelLarge, color = Sage)
-            Text("今天，也把昨天\n学过的词记牢。", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 8.dp))
+            Text(state.greeting, style = MaterialTheme.typography.labelLarge, color = Sage)
+            Text(state.dailyQuote, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 8.dp))
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
