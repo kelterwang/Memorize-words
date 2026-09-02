@@ -55,6 +55,16 @@ interface MorningWordsDao {
     @Query("SELECT * FROM WrongWord WHERE status='ACTIVE' ORDER BY lastWrongAt DESC")
     fun observeWrongWords(): Flow<List<WrongWordRow>>
 
+    @Query("""
+        SELECT b.id AS batchId, b.batchName AS batchName, b.createdAt AS batchCreatedAt,
+               bw.wordId AS wordId, bw.sortOrder AS sortOrder
+        FROM WordBatch b
+        JOIN BatchWord bw ON bw.batchId=b.id
+        JOIN WrongWord ww ON ww.wordId=bw.wordId AND ww.status='ACTIVE'
+        ORDER BY b.createdAt DESC, b.id DESC, bw.sortOrder ASC
+    """)
+    fun observeWrongWordBatchLinks(): Flow<List<WrongWordBatchLink>>
+
     @Transaction
     @Query("SELECT * FROM WrongWord WHERE status='ACTIVE' ORDER BY lastWrongAt DESC")
     suspend fun activeWrongWords(): List<WrongWordRow>

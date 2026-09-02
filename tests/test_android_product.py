@@ -43,7 +43,7 @@ class AndroidProductStructureTest(unittest.TestCase):
 
     def test_primary_product_routes_are_present(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
-        for route in ["home", "library", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/review", "settings"]:
+        for route in ["home", "library", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/batch/{batchId}", "wrong/word/{wordId}", "wrong/review", "settings"]:
             self.assertIn(f'composable("{route}")', source)
 
     def test_known_answer_confirmation_stays_in_right_action_slot(self) -> None:

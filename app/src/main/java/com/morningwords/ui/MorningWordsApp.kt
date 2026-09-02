@@ -86,6 +86,14 @@ fun MorningWordsApp(viewModel: AppViewModel) {
                 }
                 composable("completed") { CompletionScreen(state.session, nav) }
                 composable("wrong") { WrongScreen(state, viewModel, nav) }
+                composable("wrong/batch/{batchId}") { entry ->
+                    val batchId = entry.arguments?.getString("batchId")?.toLongOrNull() ?: return@composable
+                    WrongBatchScreen(state.wrongWordGroups.firstOrNull { it.batchId == batchId }, nav)
+                }
+                composable("wrong/word/{wordId}") { entry ->
+                    val wordId = entry.arguments?.getString("wordId")?.toLongOrNull() ?: return@composable
+                    WrongWordDetailScreen(state.wrongWords.firstOrNull { it.word.id == wordId }, nav)
+                }
                 composable("wrong/review") { WrongReviewSetup(state, viewModel, nav) }
                 composable("settings") { SettingsScreen(state, viewModel) }
             }
@@ -488,17 +496,89 @@ private fun WrongScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
         }
         Spacer(Modifier.height(16.dp))
         if (state.wrongWords.isEmpty()) EmptyState(Icons.Outlined.CheckCircleOutline, "暂时没有错词", "保持这个状态，很棒。")
-        else LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(state.wrongWords, key = { it.wrong.id }) { WrongRow(it) }
+        else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+            items(state.wrongWordGroups, key = { it.batchId }) { group ->
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Paper,
+                    modifier = Modifier.fillMaxWidth().clickable { nav.navigate("wrong/batch/${group.batchId}") },
+                ) {
+                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = RoundedCornerShape(14.dp), color = SageSoft) {
+                            Icon(Icons.Outlined.Folder, null, tint = Sage, modifier = Modifier.padding(12.dp))
+                        }
+                        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                            Text(group.batchName, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                            Text("${group.words.size} 个错词", color = Coral, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, "查看错词")
+                    }
+                }
+            }
         }
     }
 }
 
-@Composable private fun WrongRow(row: WrongWordRow) {
-    Surface(shape = RoundedCornerShape(18.dp), color = Paper) {
+@Composable
+private fun WrongBatchScreen(group: com.morningwords.data.repository.WrongWordGroup?, nav: NavHostController) {
+    Column(Modifier.fillMaxSize()) {
+        BackHeader(group?.batchName ?: "错词分类", nav)
+        if (group == null) {
+            EmptyState(Icons.Outlined.FolderOff, "这个词库已不存在", "返回错词页查看其他分类。")
+        } else {
+            Text("${group.words.size} 个错词", color = Coral, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp), fontWeight = FontWeight.SemiBold)
+            LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                items(group.words, key = { it.wrong.id }) { row ->
+                    WrongRow(row) { nav.navigate("wrong/word/${row.word.id}") }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun WrongRow(row: WrongWordRow, onClick: () -> Unit) {
+    Surface(shape = RoundedCornerShape(18.dp), color = Paper, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) { Text(row.word.word, fontSize = 19.sp, fontWeight = FontWeight.SemiBold); row.word.meaning?.let { Text(it, color = Ink.copy(.58f)) } }
             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFE5DE)) { Text("错 ${row.wrong.wrongCount + row.wrong.reviewWrongCount} 次", color = Coral, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium) }
+            Icon(Icons.Outlined.ChevronRight, "查看详情", tint = Ink.copy(.45f), modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun WrongWordDetailScreen(row: WrongWordRow?, nav: NavHostController) {
+    Column(Modifier.fillMaxSize()) {
+        BackHeader("单词详情", nav)
+        if (row == null) {
+            EmptyState(Icons.Outlined.SearchOff, "找不到这个错词", "它可能已经移出错词库。")
+        } else {
+            LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                item {
+                    Surface(shape = RoundedCornerShape(26.dp), color = Paper, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(row.word.word, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                            row.word.phonetic?.let { Text(it, color = Ink.copy(.5f), modifier = Modifier.padding(top = 5.dp)) }
+                            Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFE5DE), modifier = Modifier.padding(top = 16.dp)) {
+                                Text("累计答错 ${row.wrong.wrongCount + row.wrong.reviewWrongCount} 次", color = Coral, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
+                            }
+                        }
+                    }
+                }
+                item { DetailItem("词性", row.word.partOfSpeech ?: "暂无词性") }
+                item { DetailItem("释义", row.word.meaning ?: "暂无释义") }
+                item { DetailItem("例句", row.word.example ?: "暂无例句") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailItem(label: String, value: String) {
+    Surface(shape = RoundedCornerShape(18.dp), color = Paper, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(18.dp)) {
+            Text(label, color = Sage, style = MaterialTheme.typography.labelLarge)
+            Text(value, modifier = Modifier.padding(top = 7.dp), style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

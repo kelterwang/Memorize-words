@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 data class Dashboard(val batchCount: Int, val wordCount: Int, val wrongCount: Int)
+data class WrongWordGroup(val batchId: Long, val batchName: String, val words: List<WrongWordRow>)
 data class SessionView(
     val session: SessionSnapshot,
     val current: WordCard?,
@@ -38,6 +39,7 @@ class MorningWordsRepository(
 ) {
     val batches: Flow<List<BatchSummary>> = dao.observeBatches().mapRows()
     val wrongWords: Flow<List<WrongWordRow>> = dao.observeWrongWords()
+    val wrongWordGroups: Flow<List<WrongWordGroup>> = combine(dao.observeWrongWordBatchLinks(), wrongWords, ::groupWrongWordsByBatch)
     val dashboard: Flow<Dashboard> = combine(
         dao.observeBatchCount(), dao.observeWordCount(), dao.observeWrongCount()
     ) { batches, words, wrong -> Dashboard(batches, words, wrong) }
@@ -299,6 +301,19 @@ class MorningWordsRepository(
         }
         TestPhase.ROUND_SUMMARY, TestPhase.COMPLETED -> null
     }
+}
+
+internal fun groupWrongWordsByBatch(
+    links: List<WrongWordBatchLink>,
+    wrongWords: List<WrongWordRow>,
+): List<WrongWordGroup> {
+    val rowsByWordId = wrongWords.associateBy { it.word.id }
+    return links
+        .mapNotNull { link -> rowsByWordId[link.wordId]?.let { link to it } }
+        .groupBy { it.first.batchId }
+        .map { (batchId, entries) ->
+            WrongWordGroup(batchId, entries.first().first.batchName, entries.map { it.second })
+        }
 }
 
 private fun TestSessionEntity.snapshot() = SessionSnapshot(id, sessionType, testMode, status, phase, totalCount, firstPassCount, firstWrongCount, roundNumber)

@@ -137,6 +137,6 @@ data class UndoSnapshotEntity(
 )
 
 data class BatchRow(val id: Long, val batchName: String, val createdAt: Long, val wordCount: Int)
+data class WrongWordBatchLink(val batchId: Long, val batchName: String, val batchCreatedAt: Long, val wordId: Long, val sortOrder: Int)
 data class SessionWordWithWord(@Embedded val sessionWord: SessionWordEntity, @Relation(parentColumn = "wordId", entityColumn = "id") val word: WordEntity)
 data class WrongWordRow(@Embedded val wrong: WrongWordEntity, @Relation(parentColumn = "wordId", entityColumn = "id") val word: WordEntity)
-

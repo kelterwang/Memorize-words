@@ -16,6 +16,7 @@ data class AppUiState(
     val dashboard: Dashboard = Dashboard(0, 0, 0),
     val batches: List<BatchSummary> = emptyList(),
     val wrongWords: List<WrongWordRow> = emptyList(),
+    val wrongWordGroups: List<WrongWordGroup> = emptyList(),
     val settings: AppSettings = AppSettings(),
     val activeSessionId: Long? = null,
     val session: SessionView? = null,
@@ -51,6 +52,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         selectedMode = if (it.selectedMode == TestMode.STUDENT) data.d.defaultTestMode else it.selectedMode,
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            repository.wrongWordGroups.collect { groups ->
+                mutable.update { it.copy(wrongWordGroups = groups) }
             }
         }
         refreshActive()
