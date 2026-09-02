@@ -80,7 +80,7 @@ interface MorningWordsDao {
 
     @Query("SELECT COUNT(*) FROM WrongWord WHERE status='ACTIVE'") fun observeWrongCount(): Flow<Int>
     @Query("SELECT COUNT(*) FROM WordBatch") fun observeBatchCount(): Flow<Int>
-    @Query("SELECT COUNT(*) FROM Word") fun observeWordCount(): Flow<Int>
+    @Query("SELECT COUNT(DISTINCT wordId) FROM BatchWord") fun observeWordCount(): Flow<Int>
 
     @Query("""
         SELECT wr.wordId

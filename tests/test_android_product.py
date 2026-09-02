@@ -111,6 +111,11 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn('Text("导入时间 ${formatImportTime(batch.createdAt)}"', ui)
         self.assertIn('Icon(Icons.Outlined.Edit, "修改名称")', ui)
 
+    def test_home_word_count_only_includes_words_in_existing_libraries(self) -> None:
+        dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
+        self.assertIn("SELECT COUNT(DISTINCT wordId) FROM BatchWord", dao)
+        self.assertNotIn('SELECT COUNT(*) FROM Word") fun observeWordCount', dao)
+
     def test_import_separates_and_repairs_word_details(self) -> None:
         importer = (ROOT / "app/src/main/java/com/morningwords/domain/importer/WordImporter.kt").read_text(encoding="utf-8")
         repository = (ROOT / "app/src/main/java/com/morningwords/data/repository/MorningWordsRepository.kt").read_text(encoding="utf-8")

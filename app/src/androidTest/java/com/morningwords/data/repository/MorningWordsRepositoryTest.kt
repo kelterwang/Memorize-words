@@ -10,9 +10,15 @@ import com.morningwords.domain.model.TestMode
 import com.morningwords.domain.model.TestPhase
 import com.morningwords.domain.model.TestResult
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.produceIn
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -111,5 +117,23 @@ class MorningWordsRepositoryTest {
         assertTrue(repository.deleteBatch(deletedBatch))
 
         assertEquals(CreateSessionResult.Empty, repository.createDailySession(listOf(deletedBatch), TestMode.STUDENT))
+    }
+
+    @Test fun deletingBatchUpdatesDashboardWordCountAndKeepsSharedWords() = runBlocking {
+        val first = repository.importBatch("第一批", "apple\nbanana")
+        val second = repository.importBatch("第二批", "banana\ncherry")
+        val counts = repository.dashboard.map { it.wordCount }.distinctUntilChanged().produceIn(this)
+        try {
+            assertEquals(3, withTimeout(5_000) { counts.receive() })
+
+            assertTrue(repository.deleteBatch(first))
+            assertEquals(2, withTimeout(5_000) { counts.receive() })
+            assertNotNull(database.dao().findWord("apple"))
+
+            assertTrue(repository.deleteBatch(second))
+            assertEquals(0, withTimeout(5_000) { counts.receive() })
+        } finally {
+            counts.cancel()
+        }
     }
 }
