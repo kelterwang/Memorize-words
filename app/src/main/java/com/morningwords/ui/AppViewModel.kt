@@ -151,6 +151,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mutable.update { it.copy(message = if (deleted) "批次已删除，历史记录已保留" else "该批次正被晨测使用，暂不能删除") }
     }
 
+    fun renameBatch(id: Long, name: String) = launchBusy {
+        repository.renameBatch(id, name)
+        mutable.update { it.copy(message = "词库名称已更新") }
+    }
+
     fun setMode(value: TestMode) = viewModelScope.launch { settingsRepository.setMode(value) }
     fun setAutoPronounce(value: Boolean) = viewModelScope.launch { settingsRepository.setAutoPronounce(value) }
     fun setShowAnswer(value: Boolean) = viewModelScope.launch { settingsRepository.setShowAnswer(value) }

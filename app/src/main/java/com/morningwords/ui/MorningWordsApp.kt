@@ -37,6 +37,8 @@ import com.morningwords.data.entity.WrongWordRow
 import com.morningwords.data.repository.SessionView
 import com.morningwords.domain.importer.ImportPreview
 import com.morningwords.domain.model.*
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 private val Ink = Color(0xFF292621)
@@ -191,6 +193,30 @@ private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
 
 @Composable
 private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
+    var editingBatch by remember { mutableStateOf<BatchSummary?>(null) }
+    var editedName by remember { mutableStateOf("") }
+    editingBatch?.let { batch ->
+        AlertDialog(
+            onDismissRequest = { editingBatch = null },
+            title = { Text("修改词库名称") },
+            text = {
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    label = { Text("词库名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { vm.renameBatch(batch.id, editedName); editingBatch = null },
+                    enabled = editedName.isNotBlank() && !state.isBusy,
+                ) { Text("保存") }
+            },
+            dismissButton = { TextButton(onClick = { editingBatch = null }) { Text("取消") } },
+        )
+    }
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         PageHeader("词库", "按老师布置的内容分批管理")
         Button(onClick = { nav.navigate("import") }, modifier = Modifier.fillMaxWidth()) {
@@ -208,7 +234,9 @@ private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostContr
                         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
                             Text(batch.name, fontWeight = FontWeight.SemiBold)
                             Text("${batch.wordCount} 个单词", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = .55f))
+                            Text("导入时间 ${formatImportTime(batch.createdAt)}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = .45f))
                         }
+                        IconButton(onClick = { editingBatch = batch; editedName = batch.name }) { Icon(Icons.Outlined.Edit, "修改名称") }
                         IconButton(onClick = { vm.deleteBatch(batch.id) }) { Icon(Icons.Outlined.DeleteOutline, "删除") }
                     }
                 }
@@ -216,6 +244,9 @@ private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostContr
         }
     }
 }
+
+private fun formatImportTime(timestamp: Long): String =
+    SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
 
 @Composable
 private fun ImportScreen(preview: ImportPreview?, busy: Boolean, vm: AppViewModel, nav: NavHostController) {

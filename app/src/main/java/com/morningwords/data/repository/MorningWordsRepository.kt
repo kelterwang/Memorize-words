@@ -97,6 +97,12 @@ class MorningWordsRepository(
         true
     }
 
+    suspend fun renameBatch(batchId: Long, name: String) {
+        val trimmed = name.trim()
+        require(trimmed.isNotEmpty()) { "词库名称不能为空" }
+        require(dao.renameBatch(batchId, trimmed) > 0) { "词库不存在或已被删除" }
+    }
+
     suspend fun createDailySession(batchIds: List<Long>, mode: TestMode): CreateSessionResult = db.withTransaction {
         dao.activeSession()?.let { return@withTransaction CreateSessionResult.AlreadyInProgress(it.id) }
         val existingBatchIds = dao.getBatches().mapTo(mutableSetOf()) { it.id }

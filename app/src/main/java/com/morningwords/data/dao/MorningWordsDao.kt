@@ -14,6 +14,8 @@ interface MorningWordsDao {
     @Update suspend fun updateWord(value: WordEntity)
     @Insert suspend fun insertBatch(value: WordBatchEntity): Long
     @Insert suspend fun insertBatchWord(value: BatchWordEntity): Long
+    @Query("UPDATE WordBatch SET batchName=:name WHERE id=:batchId")
+    suspend fun renameBatch(batchId: Long, name: String): Int
 
     @Query("SELECT b.id, b.batchName, b.createdAt, COUNT(bw.id) AS wordCount FROM WordBatch b LEFT JOIN BatchWord bw ON bw.batchId=b.id GROUP BY b.id ORDER BY b.createdAt DESC")
     fun observeBatches(): Flow<List<BatchRow>>

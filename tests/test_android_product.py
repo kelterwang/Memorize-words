@@ -80,6 +80,14 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn('ModeCard(TestMode.PARENT', screen.group(0))
         self.assertIn('SectionTitle("测试方式"', screen.group(0))
 
+    def test_library_rename_is_shared_with_wrong_word_categories(self) -> None:
+        dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertIn("UPDATE WordBatch SET batchName=:name", dao)
+        self.assertIn("b.batchName AS batchName", dao)
+        self.assertIn('Text("导入时间 ${formatImportTime(batch.createdAt)}"', ui)
+        self.assertIn('Icon(Icons.Outlined.Edit, "修改名称")', ui)
+
 
 if __name__ == "__main__":
     unittest.main()
