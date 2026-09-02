@@ -97,8 +97,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         launchBusy {
             val answeredCard = mutable.value.session?.current
             val next = repository.answer(sessionId, result)
-            val showFeedback = next.session.phase != TestPhase.ROUND_SUMMARY &&
-                (result == TestResult.UNKNOWN || (result == TestResult.KNOW && mutable.value.settings.showAnswerAfterKnow))
+            val showFeedback = shouldShowAnswerFeedback(
+                result = result,
+                showAnswerAfterKnow = mutable.value.settings.showAnswerAfterKnow,
+                nextPhase = next.session.phase,
+            )
             mutable.update { it.copy(session = next, feedbackCard = if (showFeedback) answeredCard else null, answerVisible = showFeedback) }
             if (showFeedback && result == TestResult.KNOW) {
                 delay(700)
@@ -153,3 +156,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 }
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
+
+internal fun shouldShowAnswerFeedback(
+    result: TestResult,
+    showAnswerAfterKnow: Boolean,
+    nextPhase: TestPhase,
+): Boolean = result == TestResult.KNOW &&
+    showAnswerAfterKnow &&
+    nextPhase != TestPhase.ROUND_SUMMARY
