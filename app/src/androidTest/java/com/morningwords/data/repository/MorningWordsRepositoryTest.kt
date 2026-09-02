@@ -43,19 +43,50 @@ class MorningWordsRepositoryTest {
         assertEquals(3, repository.loadSession(sessionId)?.session?.totalCount)
     }
 
-    @Test fun firstRoundWrongPersistsAndFinalCheckCanComplete() = runTest {
-        val batch = repository.importBatch("测试", "achieve")
+    @Test fun firstRoundShowsStatsAndWrongAnswersRetryOnlyWhenRequested() = runTest {
+        val batch = repository.importBatch("测试", "achieve\nmaintain")
         val sessionId = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
 
         var state = repository.answer(sessionId, TestResult.UNKNOWN)
-        assertEquals(TestPhase.WRONG_LOOP, state.session.phase)
+        assertEquals(TestPhase.FIRST_ROUND, state.session.phase)
+        assertEquals(1, state.roundTestedCount)
+        assertEquals(0, state.roundKnownCount)
+        assertEquals(1, state.roundWrongCount)
+        state = repository.answer(sessionId, TestResult.KNOW)
+        assertEquals(TestPhase.ROUND_SUMMARY, state.session.phase)
+        assertEquals(2, state.roundTestedCount)
+        assertEquals(1, state.roundKnownCount)
+        assertEquals(1, state.roundWrongCount)
         assertEquals(1, repository.wrongWords.first().size)
 
+        state = repository.retryWrongAnswers(sessionId)
+        assertEquals(TestPhase.WRONG_LOOP, state.session.phase)
+        assertEquals(1, state.roundTotalCount)
+        assertEquals(0, state.roundTestedCount)
         state = repository.answer(sessionId, TestResult.KNOW)
-        assertEquals(TestPhase.FINAL_CHECK, state.session.phase)
-        state = repository.answer(sessionId, TestResult.KNOW)
+        assertEquals(TestPhase.ROUND_SUMMARY, state.session.phase)
+        assertEquals(1, state.roundKnownCount)
+        assertEquals(0, state.roundWrongCount)
+        state = repository.completeFromSummary(sessionId)
         assertEquals(SessionStatus.COMPLETED, state.session.status)
         assertEquals(1, repository.wrongWords.first().single().wrong.wrongCount)
+    }
+
+    @Test fun failedRetryCanBeRequestedRepeatedly() = runTest {
+        val batch = repository.importBatch("测试", "achieve")
+        val sessionId = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+
+        repository.answer(sessionId, TestResult.UNKNOWN)
+        repository.retryWrongAnswers(sessionId)
+        var state = repository.answer(sessionId, TestResult.UNKNOWN)
+        assertEquals(TestPhase.ROUND_SUMMARY, state.session.phase)
+        assertEquals(1, state.roundWrongCount)
+
+        state = repository.retryWrongAnswers(sessionId)
+        assertEquals(2, state.session.roundNumber)
+        state = repository.answer(sessionId, TestResult.KNOW)
+        assertEquals(TestPhase.ROUND_SUMMARY, state.session.phase)
+        assertEquals(0, state.roundWrongCount)
     }
 
     @Test fun activeSessionProtectsItsSourceBatch() = runTest {
@@ -64,4 +95,3 @@ class MorningWordsRepositoryTest {
         assertTrue(!repository.deleteBatch(batch))
     }
 }
-

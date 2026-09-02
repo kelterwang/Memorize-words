@@ -40,6 +40,7 @@ class DesignDocumentTest(unittest.TestCase):
                 "WRONG_LOOP",
                 "FINAL_CHECK",
                 "WRONG_REVIEW",
+                "ROUND_SUMMARY",
                 "COMPLETED",
             ],
             "TestResult": ["KNOW", "UNKNOWN", "MASTERED"],
@@ -63,19 +64,16 @@ class DesignDocumentTest(unittest.TestCase):
 
     def test_required_state_machine_paths_are_documented(self) -> None:
         paths = [
-            "FIRST_ROUND → COMPLETED",
-            "FIRST_ROUND → WRONG_LOOP → FINAL_CHECK → COMPLETED",
-            (
-                "FIRST_ROUND → WRONG_LOOP → FINAL_CHECK → WRONG_LOOP → "
-                "FINAL_CHECK → COMPLETED"
-            ),
+            "FIRST_ROUND → ROUND_SUMMARY → COMPLETED",
+            "FIRST_ROUND → ROUND_SUMMARY → WRONG_LOOP → ROUND_SUMMARY → COMPLETED",
+            "ROUND_SUMMARY → WRONG_LOOP → ROUND_SUMMARY",
         ]
         for path in paths:
             with self.subTest(path=path):
                 self.assertIn(path, self.content)
 
     def test_required_ui_wording_is_documented(self) -> None:
-        for wording in ["会", "不会", "会（移出错词库）", "继续晨测", "今日完成"]:
+        for wording in ["会", "不会", "会（移出错词库）", "错题重新测试", "退出并完成今日测试"]:
             with self.subTest(wording=wording):
                 self.assertIn(wording, self.content)
 

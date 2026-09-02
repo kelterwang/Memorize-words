@@ -97,7 +97,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         launchBusy {
             val answeredCard = mutable.value.session?.current
             val next = repository.answer(sessionId, result)
-            val showFeedback = next.session.status != SessionStatus.COMPLETED &&
+            val showFeedback = next.session.phase != TestPhase.ROUND_SUMMARY &&
                 (result == TestResult.UNKNOWN || (result == TestResult.KNOW && mutable.value.settings.showAnswerAfterKnow))
             mutable.update { it.copy(session = next, feedbackCard = if (showFeedback) answeredCard else null, answerVisible = showFeedback) }
             if (showFeedback && result == TestResult.KNOW) {
@@ -105,6 +105,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 mutable.update { it.copy(feedbackCard = null, answerVisible = false) }
             }
             refreshActive()
+        }
+    }
+
+    fun retryWrongAnswers() {
+        val sessionId = mutable.value.session?.session?.id ?: return
+        launchBusy {
+            mutable.update { it.copy(session = repository.retryWrongAnswers(sessionId), feedbackCard = null, answerVisible = false) }
+        }
+    }
+
+    fun completeToday(onDone: () -> Unit) {
+        val sessionId = mutable.value.session?.session?.id ?: return
+        launchBusy {
+            mutable.update { it.copy(session = repository.completeFromSummary(sessionId), feedbackCard = null, answerVisible = false, activeSessionId = null) }
+            onDone()
         }
     }
 
@@ -128,6 +143,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setShowAnswer(value: Boolean) = viewModelScope.launch { settingsRepository.setShowAnswer(value) }
     fun setLargeFont(value: Boolean) = viewModelScope.launch { settingsRepository.setLargeFont(value) }
     fun clearMessage() = mutable.update { it.copy(message = null) }
+    fun showMessage(message: String) = mutable.update { it.copy(message = message) }
 
     private fun launchBusy(block: suspend () -> Unit) = viewModelScope.launch {
         mutable.update { it.copy(isBusy = true, message = null) }

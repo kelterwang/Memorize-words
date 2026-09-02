@@ -28,7 +28,7 @@ class AndroidProductStructureTest(unittest.TestCase):
             "SessionType": ["DAILY_TEST", "WRONG_REVIEW"],
             "TestMode": ["STUDENT", "PARENT"],
             "SessionStatus": ["IN_PROGRESS", "COMPLETED", "ABANDONED"],
-            "TestPhase": ["FIRST_ROUND", "WRONG_LOOP", "FINAL_CHECK", "WRONG_REVIEW", "COMPLETED"],
+            "TestPhase": ["FIRST_ROUND", "WRONG_LOOP", "FINAL_CHECK", "WRONG_REVIEW", "ROUND_SUMMARY", "COMPLETED"],
             "TestResult": ["KNOW", "UNKNOWN", "MASTERED"],
         }
         for name, values in expected.items():

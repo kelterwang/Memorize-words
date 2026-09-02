@@ -18,6 +18,10 @@ data class SessionView(
     val current: WordCard?,
     val passedCount: Int,
     val pendingCount: Int,
+    val roundTotalCount: Int,
+    val roundTestedCount: Int,
+    val roundKnownCount: Int,
+    val roundWrongCount: Int,
 )
 
 sealed interface CreateSessionResult {
@@ -154,6 +158,15 @@ class MorningWordsRepository(
         val snapshot = entity.snapshot()
         val currentRow = findCurrent(snapshot, rows)
         val passed = rows.count { it.sessionWord.queueState == SessionWordQueueState.PASSED }
+        val answeredThisRound = rows.filter { it.sessionWord.lastAnsweredRound == entity.roundNumber }
+        val waitingThisRound = when (entity.phase) {
+            TestPhase.FIRST_ROUND -> rows.count { it.sessionWord.queueState == SessionWordQueueState.NOT_ANSWERED }
+            TestPhase.WRONG_LOOP, TestPhase.FINAL_CHECK, TestPhase.WRONG_REVIEW -> rows.count {
+                it.sessionWord.queueState == SessionWordQueueState.QUEUED &&
+                    (it.sessionWord.lastAnsweredRound ?: -1) < entity.roundNumber
+            }
+            TestPhase.ROUND_SUMMARY, TestPhase.COMPLETED -> 0
+        }
         return SessionView(
             session = snapshot,
             current = currentRow?.let { row ->
@@ -169,6 +182,10 @@ class MorningWordsRepository(
             },
             passedCount = passed,
             pendingCount = entity.totalCount - passed,
+            roundTotalCount = answeredThisRound.size + waitingThisRound,
+            roundTestedCount = answeredThisRound.size,
+            roundKnownCount = answeredThisRound.count { it.sessionWord.lastResult != TestResult.UNKNOWN },
+            roundWrongCount = answeredThisRound.count { it.sessionWord.lastResult == TestResult.UNKNOWN },
         )
     }
 
@@ -202,12 +219,6 @@ class MorningWordsRepository(
         )
         dao.updateSessionWord(updatedCurrent)
 
-        if (plan.resetFinalCheck) {
-            val refreshed = dao.sessionWords(sessionId).filter { it.sessionWord.wasFirstRoundWrong }
-                .mapIndexed { index, row -> row.sessionWord.copy(queueState = SessionWordQueueState.QUEUED, queueOrder = index, lastAnsweredRound = null) }
-            dao.updateSessionWords(refreshed)
-        }
-
         applyWrongWordRules(sessionEntity, current.wordId, result, now)
         dao.updateSession(
             sessionEntity.copy(
@@ -220,6 +231,39 @@ class MorningWordsRepository(
                 roundNumber = plan.roundNumber,
             )
         )
+        requireNotNull(loadSession(sessionId))
+    }
+
+    suspend fun retryWrongAnswers(sessionId: Long): SessionView = db.withTransaction {
+        val session = requireNotNull(dao.session(sessionId))
+        require(session.status == SessionStatus.IN_PROGRESS && session.phase == TestPhase.ROUND_SUMMARY) {
+            "当前不在测试统计页"
+        }
+        val wrongRows = dao.sessionWords(sessionId).filter {
+            it.sessionWord.lastAnsweredRound == session.roundNumber &&
+                it.sessionWord.lastResult == TestResult.UNKNOWN
+        }
+        require(wrongRows.isNotEmpty()) { "本轮没有错题" }
+        dao.updateSessionWords(wrongRows.mapIndexed { index, row ->
+            row.sessionWord.copy(queueState = SessionWordQueueState.QUEUED, queueOrder = index)
+        })
+        dao.updateSession(
+            session.copy(
+                phase = if (session.sessionType == SessionType.WRONG_REVIEW) TestPhase.WRONG_REVIEW else TestPhase.WRONG_LOOP,
+                roundNumber = session.roundNumber + 1,
+                updatedAt = clock(),
+            )
+        )
+        requireNotNull(loadSession(sessionId))
+    }
+
+    suspend fun completeFromSummary(sessionId: Long): SessionView = db.withTransaction {
+        val session = requireNotNull(dao.session(sessionId))
+        require(session.status == SessionStatus.IN_PROGRESS && session.phase == TestPhase.ROUND_SUMMARY) {
+            "当前不在测试统计页"
+        }
+        val now = clock()
+        dao.updateSession(session.copy(status = SessionStatus.COMPLETED, phase = TestPhase.COMPLETED, updatedAt = now, completedAt = now))
         requireNotNull(loadSession(sessionId))
     }
 
@@ -252,7 +296,7 @@ class MorningWordsRepository(
         TestPhase.WRONG_LOOP, TestPhase.FINAL_CHECK, TestPhase.WRONG_REVIEW -> rows.firstOrNull {
             it.sessionWord.queueState == SessionWordQueueState.QUEUED && (it.sessionWord.lastAnsweredRound ?: -1) < session.roundNumber
         }
-        TestPhase.COMPLETED -> null
+        TestPhase.ROUND_SUMMARY, TestPhase.COMPLETED -> null
     }
 }
 

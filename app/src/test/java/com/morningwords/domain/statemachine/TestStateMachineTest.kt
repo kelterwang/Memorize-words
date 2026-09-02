@@ -8,62 +8,64 @@ import org.junit.Test
 class TestStateMachineTest {
     private val machine = TestStateMachine()
 
-    @Test fun `zero-error first round completes`() {
+    @Test fun `zero-error first round opens summary instead of completing`() {
         val word = word(id = 1)
         val plan = machine.transition(session(total = 1), word, listOf(word), TestResult.KNOW)
-        assertEquals(SessionStatus.COMPLETED, plan.status)
-        assertEquals(TestPhase.COMPLETED, plan.phase)
+        assertEquals(SessionStatus.IN_PROGRESS, plan.status)
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
         assertEquals(1, plan.firstPassDelta)
     }
 
-    @Test fun `first-round error enters wrong loop and is immutable final set`() {
+    @Test fun `first-round error opens summary and remains queued`() {
         val word = word(id = 1)
         val plan = machine.transition(session(total = 1), word, listOf(word), TestResult.UNKNOWN)
-        assertEquals(TestPhase.WRONG_LOOP, plan.phase)
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
         assertEquals(1, plan.firstWrongDelta)
         assertTrue(plan.currentWasFirstWrong)
         assertEquals(SessionWordQueueState.QUEUED, plan.currentState)
     }
 
-    @Test fun `cleared wrong loop rebuilds full final check`() {
+    @Test fun `retry round always opens summary when all queued words were tested`() {
         val current = word(id = 1, firstWrong = true, state = SessionWordQueueState.QUEUED, lastRound = 0)
         val plan = machine.transition(
             session(total = 1, phase = TestPhase.WRONG_LOOP, round = 1, wrong = 1),
             current, listOf(current), TestResult.KNOW,
         )
-        assertEquals(TestPhase.FINAL_CHECK, plan.phase)
-        assertTrue(plan.resetFinalCheck)
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
+        assertEquals(SessionStatus.IN_PROGRESS, plan.status)
+        assertEquals(SessionWordQueueState.PASSED, plan.currentState)
     }
 
-    @Test fun `failed final check returns only failures to wrong loop`() {
-        val current = word(id = 1, firstWrong = true, state = SessionWordQueueState.QUEUED, lastRound = null)
+    @Test fun `failed retry waits on summary instead of looping automatically`() {
+        val current = word(id = 1, firstWrong = true, state = SessionWordQueueState.QUEUED, lastRound = 0)
         val plan = machine.transition(
-            session(total = 1, phase = TestPhase.FINAL_CHECK, round = 2, wrong = 1),
+            session(total = 1, phase = TestPhase.WRONG_LOOP, round = 1, wrong = 1),
             current, listOf(current), TestResult.UNKNOWN,
         )
-        assertEquals(TestPhase.WRONG_LOOP, plan.phase)
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
         assertEquals(SessionWordQueueState.QUEUED, plan.currentState)
-        assertEquals(3, plan.roundNumber)
+        assertEquals(1, plan.roundNumber)
     }
 
-    @Test fun `successful full final check completes`() {
-        val current = word(id = 1, firstWrong = true, state = SessionWordQueueState.QUEUED)
-        val plan = machine.transition(
-            session(total = 1, phase = TestPhase.FINAL_CHECK, round = 2, wrong = 1),
-            current, listOf(current), TestResult.KNOW,
-        )
-        assertEquals(SessionStatus.COMPLETED, plan.status)
-    }
-
-    @Test fun `wrong review loops unknown without final check`() {
+    @Test fun `wrong review also stops at summary`() {
         val current = word(id = 1, state = SessionWordQueueState.QUEUED)
         val plan = machine.transition(
             session(total = 1, type = SessionType.WRONG_REVIEW, phase = TestPhase.WRONG_REVIEW, round = 1),
             current, listOf(current), TestResult.UNKNOWN,
         )
-        assertEquals(TestPhase.WRONG_REVIEW, plan.phase)
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
         assertEquals(SessionStatus.IN_PROGRESS, plan.status)
-        assertEquals(2, plan.roundNumber)
+        assertEquals(1, plan.roundNumber)
+    }
+
+    @Test fun `wrong review accepts mastered on its final word`() {
+        val current = word(id = 1, state = SessionWordQueueState.QUEUED)
+        val plan = machine.transition(
+            session(total = 1, type = SessionType.WRONG_REVIEW, phase = TestPhase.WRONG_REVIEW, round = 1),
+            current, listOf(current), TestResult.MASTERED,
+        )
+        assertEquals(TestPhase.ROUND_SUMMARY, plan.phase)
+        assertEquals(SessionWordQueueState.PASSED, plan.currentState)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -87,4 +89,3 @@ class TestStateMachineTest {
         lastRound: Int? = null,
     ) = SessionWordSnapshot(id, id, id.toInt(), firstWrong, state, id.toInt(), lastRound, null)
 }
-

@@ -42,6 +42,7 @@ class TechnicalSolutionDocumentTest(unittest.TestCase):
                 "WRONG_LOOP",
                 "FINAL_CHECK",
                 "WRONG_REVIEW",
+                "ROUND_SUMMARY",
                 "COMPLETED",
             ],
             "TestResult": ["KNOW", "UNKNOWN", "MASTERED"],

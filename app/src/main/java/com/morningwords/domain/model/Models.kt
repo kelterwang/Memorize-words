@@ -3,7 +3,7 @@ package com.morningwords.domain.model
 enum class SessionType { DAILY_TEST, WRONG_REVIEW }
 enum class TestMode { STUDENT, PARENT }
 enum class SessionStatus { IN_PROGRESS, COMPLETED, ABANDONED }
-enum class TestPhase { FIRST_ROUND, WRONG_LOOP, FINAL_CHECK, WRONG_REVIEW, COMPLETED }
+enum class TestPhase { FIRST_ROUND, WRONG_LOOP, FINAL_CHECK, WRONG_REVIEW, ROUND_SUMMARY, COMPLETED }
 enum class TestResult { KNOW, UNKNOWN, MASTERED }
 enum class WrongWordStatus { ACTIVE, MASTERED }
 enum class WrongRecordType { FIRST_ROUND_WRONG, WRONG_REVIEW_WRONG }
@@ -54,4 +54,3 @@ data class TransitionPlan(
     val currentWasFirstWrong: Boolean,
     val resetFinalCheck: Boolean = false,
 )
-

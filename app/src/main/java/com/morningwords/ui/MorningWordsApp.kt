@@ -3,6 +3,7 @@
 package com.morningwords.ui
 
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -156,9 +157,9 @@ private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
         item {
             SectionTitle("晨测节奏", "离线保存 · 每题即时记录")
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StepChip("01", "首轮")
-                StepChip("02", "错词循环")
-                StepChip("03", "完整终验")
+                StepChip("01", "全部测试")
+                StepChip("02", "轮次统计")
+                StepChip("03", "按需复测")
             }
         }
     }
@@ -304,26 +305,77 @@ private fun SetupScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
 @Composable
 private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
     val session = state.session
-    LaunchedEffect(session?.session?.status) { if (session?.session?.status == SessionStatus.COMPLETED) nav.navigate("completed") { popUpTo("home") } }
     if (session == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
+    if (session.session.phase == TestPhase.ROUND_SUMMARY) {
+        RoundSummaryScreen(session, state.isBusy, vm, nav)
+        return
+    }
     val card = state.feedbackCard ?: session.current ?: return
     val answerShown = state.answerVisible || session.session.mode == TestMode.PARENT
+    val context = LocalContext.current.applicationContext
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var ttsReady by remember { mutableStateOf(false) }
+    var speechError by remember { mutableStateOf<String?>(null) }
+    DisposableEffect(context) {
+        val engine = TextToSpeech(context) { status ->
+            val active = tts
+            if (status == TextToSpeech.SUCCESS && active != null) {
+                val locale = when {
+                    active.isLanguageAvailable(Locale.US) >= TextToSpeech.LANG_AVAILABLE -> Locale.US
+                    active.isLanguageAvailable(Locale.ENGLISH) >= TextToSpeech.LANG_AVAILABLE -> Locale.ENGLISH
+                    else -> null
+                }
+                ttsReady = locale != null && active.setLanguage(locale) >= TextToSpeech.LANG_AVAILABLE
+                if (!ttsReady) speechError = "设备缺少可用的英文语音，请在系统设置中安装文字转语音服务"
+            } else {
+                speechError = "文字转语音服务初始化失败，请检查系统语音设置"
+            }
+        }
+        engine.setSpeechRate(0.85f)
+        engine.setPitch(1.0f)
+        engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) = Unit
+            override fun onDone(utteranceId: String?) = Unit
+            @Deprecated("Deprecated by Android")
+            override fun onError(utteranceId: String?) { speechError = "发音播放失败，请检查媒体音量和系统语音服务" }
+        })
+        tts = engine
+        onDispose { engine.stop(); engine.shutdown(); tts = null }
+    }
+    fun speak() {
+        if (!ttsReady) {
+            speechError = "发音暂不可用，请检查媒体音量和系统文字转语音服务"
+        } else if (tts?.speak(card.word, TextToSpeech.QUEUE_FLUSH, null, "word-${card.id}-${System.nanoTime()}") == TextToSpeech.ERROR) {
+            speechError = "发音播放失败，请重试"
+        }
+    }
+    LaunchedEffect(card.id, ttsReady, state.settings.autoPronounce) {
+        if (ttsReady && state.settings.autoPronounce) speak()
+    }
+    LaunchedEffect(speechError) {
+        speechError?.let { vm.showMessage(it); speechError = null }
+    }
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { vm.abandon { nav.navigate("home") { popUpTo("home") { inclusive = true } } } }) { Icon(Icons.Outlined.Close, "放弃") }
             Column(Modifier.weight(1f)) {
                 Text(phaseLabel(session.session.phase), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, color = Sage)
-                LinearProgressIndicator(progress = { session.passedCount.toFloat() / session.session.totalCount.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                LinearProgressIndicator(progress = { session.roundTestedCount.toFloat() / session.roundTotalCount.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
             }
-            Text("${session.passedCount}/${session.session.totalCount}", style = MaterialTheme.typography.labelLarge)
+            Text("${session.roundTestedCount}/${session.roundTotalCount}", style = MaterialTheme.typography.labelLarge)
         }
-        Spacer(Modifier.height(28.dp))
+        Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            LiveStat("已测", session.roundTestedCount, Ink)
+            LiveStat("会", session.roundKnownCount, Sage)
+            LiveStat("不会", session.roundWrongCount, Coral)
+        }
+        Spacer(Modifier.height(16.dp))
         AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
             Surface(shape = RoundedCornerShape(30.dp), color = Paper, shadowElevation = 2.dp, modifier = Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Text(animatedCard.word, fontSize = if (state.settings.largeFont) 48.sp else 42.sp, fontWeight = FontWeight.Bold, color = Ink)
                     animatedCard.phonetic?.let { Text(it, color = Ink.copy(alpha = .5f), modifier = Modifier.padding(top = 4.dp)) }
-                    SpeakButton(animatedCard.word, state.settings.autoPronounce)
+                    IconButton(onClick = ::speak) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "发音", tint = if (ttsReady) Sage else Color.Gray) }
                     if (answerShown) {
                         HorizontalDivider(Modifier.padding(vertical = 22.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = .45f))
                         animatedCard.partOfSpeech?.let { Text(it, color = Sage, fontWeight = FontWeight.Bold) }
@@ -349,17 +401,41 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
     }
 }
 
-@Composable private fun SpeakButton(word: String, auto: Boolean) {
-    val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var ready by remember { mutableStateOf(false) }
-    DisposableEffect(context) {
-        val engine = TextToSpeech(context) { status -> ready = status == TextToSpeech.SUCCESS }
-        tts = engine
-        onDispose { engine.stop(); engine.shutdown() }
+@Composable
+private fun LiveStat(label: String, value: Int, color: Color) {
+    Text("$label $value", color = color, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
+}
+
+@Composable
+private fun RoundSummaryScreen(session: SessionView, busy: Boolean, vm: AppViewModel, nav: NavHostController) {
+    Column(
+        Modifier.fillMaxSize().padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(shape = RoundedCornerShape(50), color = SageSoft) {
+            Icon(Icons.Outlined.Assessment, null, tint = Sage, modifier = Modifier.padding(18.dp).size(48.dp))
+        }
+        Text("本轮测试完成", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
+        Text("第 ${session.session.roundNumber + 1} 轮测试统计", color = Ink.copy(alpha = .58f), modifier = Modifier.padding(top = 8.dp))
+        Surface(shape = RoundedCornerShape(24.dp), color = Paper, modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp)) {
+            Row(Modifier.padding(22.dp), horizontalArrangement = Arrangement.SpaceAround) {
+                MiniStat("已测试", session.roundTestedCount)
+                MiniStat("会", session.roundKnownCount)
+                MiniStat("错", session.roundWrongCount)
+            }
+        }
+        Button(
+            onClick = vm::retryWrongAnswers,
+            enabled = session.roundWrongCount > 0 && !busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(if (session.roundWrongCount > 0) "错题重新测试（${session.roundWrongCount}）" else "本轮没有错题", modifier = Modifier.padding(7.dp)) }
+        OutlinedButton(
+            onClick = { vm.completeToday { nav.navigate("home") { popUpTo("home") { inclusive = true } } } },
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        ) { Text("退出并完成今日测试", modifier = Modifier.padding(7.dp)) }
     }
-    LaunchedEffect(word, ready, auto) { if (ready && auto) { tts?.language = Locale.US; tts?.speak(word, TextToSpeech.QUEUE_FLUSH, null, "auto-$word") } }
-    IconButton(onClick = { if (ready) tts?.speak(word, TextToSpeech.QUEUE_FLUSH, null, "manual-$word") }) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "发音", tint = if (ready) Sage else Color.Gray) }
 }
 
 @Composable
@@ -460,4 +536,4 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
 @Composable private fun BackHeader(title: String, nav: NavHostController) { TopAppBar(title = { Text(title, fontWeight = FontWeight.SemiBold) }, navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "返回") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Cream)) }
 @Composable private fun SectionTitle(title: String, subtitle: String) { Column { Text(title, style = MaterialTheme.typography.titleLarge); Text(subtitle, color = Ink.copy(.5f), style = MaterialTheme.typography.bodySmall) } }
 @Composable private fun EmptyState(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, detail: String) { Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) { Icon(icon, null, tint = Sage.copy(.55f), modifier = Modifier.size(44.dp)); Text(title, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 14.dp)); Text(detail, color = Ink.copy(.48f), modifier = Modifier.padding(top = 4.dp)) } }
-private fun phaseLabel(phase: TestPhase) = when (phase) { TestPhase.FIRST_ROUND -> "第一轮"; TestPhase.WRONG_LOOP -> "错词循环"; TestPhase.FINAL_CHECK -> "最终检验"; TestPhase.WRONG_REVIEW -> "错词复测"; TestPhase.COMPLETED -> "已完成" }
+private fun phaseLabel(phase: TestPhase) = when (phase) { TestPhase.FIRST_ROUND -> "第一轮"; TestPhase.WRONG_LOOP -> "错题重新测试"; TestPhase.FINAL_CHECK -> "错题重新测试"; TestPhase.WRONG_REVIEW -> "错词复测"; TestPhase.ROUND_SUMMARY -> "本轮统计"; TestPhase.COMPLETED -> "已完成" }
