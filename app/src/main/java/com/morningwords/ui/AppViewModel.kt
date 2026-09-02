@@ -107,6 +107,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val answeredCard = mutable.value.session?.current
             val next = repository.answer(sessionId, result)
             val showFeedback = shouldShowAnswerFeedback(
+                mode = next.session.mode,
                 result = result,
             )
             mutable.update { it.copy(session = next, feedbackCard = if (showFeedback) answeredCard else null, answerVisible = showFeedback) }
@@ -160,4 +161,5 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
-internal fun shouldShowAnswerFeedback(result: TestResult): Boolean = result == TestResult.KNOW
+internal fun shouldShowAnswerFeedback(mode: TestMode, result: TestResult): Boolean =
+    mode == TestMode.STUDENT && result == TestResult.KNOW
