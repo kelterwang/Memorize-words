@@ -139,6 +139,13 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn("Text(state.greeting", ui)
         self.assertIn("Text(state.dailyQuote", ui)
 
+    def test_home_uses_generic_test_wording(self) -> None:
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertIn('else "开始测试"', ui)
+        self.assertIn('SectionTitle("测试节奏"', ui)
+        self.assertNotIn('else "开始晨测"', ui)
+        self.assertNotIn('SectionTitle("晨测节奏"', ui)
+
 
 if __name__ == "__main__":
     unittest.main()

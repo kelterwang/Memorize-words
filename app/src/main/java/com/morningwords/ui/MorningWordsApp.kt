@@ -173,12 +173,12 @@ private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Paper, contentColor = Ink),
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(if (state.activeSessionId != null) "继续晨测" else if (state.dashboard.wordCount == 0) "导入单词" else "开始晨测", modifier = Modifier.padding(6.dp)) }
+                    ) { Text(if (state.activeSessionId != null) "继续晨测" else if (state.dashboard.wordCount == 0) "导入单词" else "开始测试", modifier = Modifier.padding(6.dp)) }
                 }
             }
         }
         item {
-            SectionTitle("晨测节奏", "离线保存 · 每题即时记录")
+            SectionTitle("测试节奏", "离线保存 · 每题即时记录")
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StepChip("01", "全部测试")
                 StepChip("02", "轮次统计")
