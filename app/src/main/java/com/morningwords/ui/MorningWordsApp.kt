@@ -2,6 +2,7 @@
 
 package com.morningwords.ui
 
+import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.compose.animation.AnimatedContent
@@ -326,13 +327,30 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
                     else -> null
                 }
                 ttsReady = locale != null && active.setLanguage(locale) >= TextToSpeech.LANG_AVAILABLE
+                if (ttsReady) {
+                    active.voices
+                        ?.filter { voice -> voice.locale.language == Locale.ENGLISH.language }
+                        ?.sortedWith(
+                            compareByDescending<android.speech.tts.Voice> { it.locale.country == Locale.US.country }
+                                .thenByDescending { it.quality }
+                                .thenBy { it.latency }
+                        )
+                        ?.firstOrNull()
+                        ?.let { active.voice = it }
+                }
                 if (!ttsReady) speechError = "设备缺少可用的英文语音，请在系统设置中安装文字转语音服务"
             } else {
                 speechError = "文字转语音服务初始化失败，请检查系统语音设置"
             }
         }
-        engine.setSpeechRate(0.85f)
+        engine.setSpeechRate(0.72f)
         engine.setPitch(1.0f)
+        engine.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+        )
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
             override fun onDone(utteranceId: String?) = Unit
@@ -388,7 +406,10 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
         }
         Spacer(Modifier.height(16.dp))
         if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
-            Button(onClick = vm::continueAfterAnswer, modifier = Modifier.fillMaxWidth()) { Text("确定", modifier = Modifier.padding(7.dp)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Spacer(Modifier.weight(1f))
+                Button(onClick = vm::continueAfterAnswer, modifier = Modifier.weight(1f)) { Text("确定", modifier = Modifier.padding(7.dp)) }
+            }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = { vm.answer(TestResult.UNKNOWN) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("不会", modifier = Modifier.padding(7.dp), color = Coral) }

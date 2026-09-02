@@ -46,6 +46,32 @@ class AndroidProductStructureTest(unittest.TestCase):
         for route in ["home", "library", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/review", "settings"]:
             self.assertIn(f'composable("{route}")', source)
 
+    def test_known_answer_confirmation_stays_in_right_action_slot(self) -> None:
+        source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        confirmation = re.search(
+            r"if \(state\.answerVisible.*?\}\s*else \{",
+            source,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(confirmation)
+        self.assertIn("Spacer(Modifier.weight(1f))", confirmation.group(0))
+        self.assertIn(
+            "Button(onClick = vm::continueAfterAnswer, modifier = Modifier.weight(1f))",
+            confirmation.group(0),
+        )
+
+    def test_pronunciation_uses_clear_speech_configuration(self) -> None:
+        source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        for configuration in [
+            "it.locale.country == Locale.US.country",
+            ".thenByDescending { it.quality }",
+            "engine.setSpeechRate(0.72f)",
+            "AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY",
+            "AudioAttributes.CONTENT_TYPE_SPEECH",
+        ]:
+            with self.subTest(configuration=configuration):
+                self.assertIn(configuration, source)
+
 
 if __name__ == "__main__":
     unittest.main()
