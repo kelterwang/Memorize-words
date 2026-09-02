@@ -46,6 +46,8 @@ class MorningWordsRepository(
 
     fun previewImport(text: String): ImportPreview = WordImporter.parseText(text)
 
+    suspend fun wordsInBatch(batchId: Long): List<WordEntity> = dao.wordsInBatch(batchId)
+
     suspend fun importBatch(name: String, text: String): Long = db.withTransaction {
         val preview = WordImporter.parseText(text)
         require(name.isNotBlank()) { "请输入批次名称" }

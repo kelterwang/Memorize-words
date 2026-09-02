@@ -43,8 +43,19 @@ class AndroidProductStructureTest(unittest.TestCase):
 
     def test_primary_product_routes_are_present(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
-        for route in ["home", "library", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/batch/{batchId}", "wrong/word/{wordId}", "wrong/review", "settings"]:
+        for route in ["home", "library", "batch/{batchId}", "import", "setup", "test/{sessionId}", "completed", "wrong", "wrong/batch/{batchId}", "wrong/word/{wordId}", "wrong/review", "settings"]:
             self.assertIn(f'composable("{route}")', source)
+
+    def test_library_folders_open_ordered_word_details(self) -> None:
+        repository = (ROOT / "app/src/main/java/com/morningwords/data/repository/MorningWordsRepository.kt").read_text(encoding="utf-8")
+        dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        self.assertIn("suspend fun wordsInBatch(batchId: Long)", repository)
+        self.assertIn("WHERE bw.batchId=:batchId ORDER BY bw.sortOrder", dao)
+        self.assertIn('nav.navigate("batch/${batch.id}")', ui)
+        self.assertIn("private fun BatchDetailScreen", ui)
+        self.assertIn('Text("点击单词查看完整词性、释义和例句"', ui)
+        self.assertIn("highlightedExample(it, word.word)", ui)
 
     def test_known_answer_requires_correct_or_wrong_self_assessment(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")

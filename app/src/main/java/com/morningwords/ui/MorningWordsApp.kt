@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -84,6 +85,11 @@ fun MorningWordsApp(viewModel: AppViewModel) {
             NavHost(nav, startDestination = "home", modifier = Modifier.padding(padding)) {
                 composable("home") { HomeScreen(state, viewModel, nav) }
                 composable("library") { LibraryScreen(state, viewModel, nav) }
+                composable("batch/{batchId}") { entry ->
+                    val batchId = entry.arguments?.getString("batchId")?.toLongOrNull() ?: return@composable
+                    LaunchedEffect(batchId) { viewModel.loadBatchDetail(batchId) }
+                    BatchDetailScreen(batchId, state, nav)
+                }
                 composable("import") { ImportScreen(state.importPreview, state.isBusy, viewModel, nav) }
                 composable("setup") { SetupScreen(state, viewModel, nav) }
                 composable("test/{sessionId}") { entry ->
@@ -231,7 +237,11 @@ private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostContr
         if (state.batches.isEmpty()) EmptyState(Icons.AutoMirrored.Outlined.MenuBook, "还没有批次", "从一行一个单词开始吧。")
         else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(state.batches, key = { it.id }) { batch ->
-                Surface(shape = RoundedCornerShape(20.dp), color = Paper) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Paper,
+                    modifier = Modifier.fillMaxWidth().clickable { nav.navigate("batch/${batch.id}") },
+                ) {
                     Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Surface(shape = RoundedCornerShape(14.dp), color = SageSoft) {
                             Icon(Icons.Outlined.Folder, null, tint = Sage, modifier = Modifier.padding(12.dp))
@@ -243,6 +253,65 @@ private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostContr
                         }
                         IconButton(onClick = { editingBatch = batch; editedName = batch.name }) { Icon(Icons.Outlined.Edit, "修改名称") }
                         IconButton(onClick = { vm.deleteBatch(batch.id) }) { Icon(Icons.Outlined.DeleteOutline, "删除") }
+                        Icon(Icons.Outlined.ChevronRight, "查看词库详情", tint = Ink.copy(alpha = .45f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchDetailScreen(batchId: Long, state: AppUiState, nav: NavHostController) {
+    val batch = state.batches.firstOrNull { it.id == batchId }
+    var expandedWordIds by remember(batchId) { mutableStateOf(emptySet<Long>()) }
+    Column(Modifier.fillMaxSize()) {
+        BackHeader(batch?.name ?: "词库详情", nav)
+        when {
+            state.batchDetailId != batchId || state.isBatchDetailLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            }
+            batch == null -> EmptyState(Icons.Outlined.FolderOff, "这个词库已不存在", "返回词库列表查看其他文件夹。")
+            else -> LazyColumn(
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item {
+                    Text("${batch.wordCount} 个单词 · 导入于 ${formatImportTime(batch.createdAt)}", color = Ink.copy(alpha = .58f))
+                    Text("点击单词查看完整词性、释义和例句", color = Sage, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 5.dp, bottom = 6.dp))
+                }
+                itemsIndexed(state.batchDetailWords, key = { _, word -> word.id }) { index, word ->
+                    val expanded = word.id in expandedWordIds
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = Paper,
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            expandedWordIds = if (expanded) expandedWordIds - word.id else expandedWordIds + word.id
+                        },
+                    ) {
+                        Column(Modifier.padding(17.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("${index + 1}", color = Gold, fontWeight = FontWeight.Bold, modifier = Modifier.width(34.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(word.word, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                                    if (!expanded) Text(word.meaning ?: "暂无释义", color = Ink.copy(alpha = .58f), maxLines = 1)
+                                }
+                                word.partOfSpeech?.let { Text(it, color = Sage, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(end = 6.dp)) }
+                                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (expanded) "收起" else "展开")
+                            }
+                            if (expanded) {
+                                HorizontalDivider(Modifier.padding(vertical = 13.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = .4f))
+                                Text("词性", color = Sage, style = MaterialTheme.typography.labelMedium)
+                                Text(word.partOfSpeech ?: "暂无词性", modifier = Modifier.padding(top = 3.dp))
+                                Text("释义", color = Sage, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 10.dp))
+                                Text(word.meaning ?: "暂无释义", modifier = Modifier.padding(top = 3.dp))
+                                Text("例句", color = Sage, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 10.dp))
+                                Text(
+                                    word.example?.let { highlightedExample(it, word.word) } ?: AnnotatedString("暂无例句"),
+                                    modifier = Modifier.padding(top = 3.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.morningwords.MorningWordsApplication
+import com.morningwords.data.entity.WordEntity
 import com.morningwords.data.entity.WrongWordRow
 import com.morningwords.data.repository.*
 import com.morningwords.data.settings.AppSettings
@@ -15,6 +16,9 @@ import kotlinx.coroutines.launch
 data class AppUiState(
     val dashboard: Dashboard = Dashboard(0, 0, 0),
     val batches: List<BatchSummary> = emptyList(),
+    val batchDetailId: Long? = null,
+    val batchDetailWords: List<WordEntity> = emptyList(),
+    val isBatchDetailLoading: Boolean = false,
     val wrongWords: List<WrongWordRow> = emptyList(),
     val wrongWordGroups: List<WrongWordGroup> = emptyList(),
     val settings: AppSettings = AppSettings(),
@@ -68,6 +72,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun preview(text: String) { mutable.update { it.copy(importPreview = repository.previewImport(text), message = null) } }
+
+    fun loadBatchDetail(batchId: Long) = viewModelScope.launch {
+        mutable.update { it.copy(batchDetailId = batchId, batchDetailWords = emptyList(), isBatchDetailLoading = true) }
+        runCatching { repository.wordsInBatch(batchId) }
+            .onSuccess { words ->
+                mutable.update { current ->
+                    if (current.batchDetailId == batchId) current.copy(batchDetailWords = words, isBatchDetailLoading = false) else current
+                }
+            }
+            .onFailure { error ->
+                mutable.update { current ->
+                    current.copy(isBatchDetailLoading = false, message = error.message ?: "词库加载失败")
+                }
+            }
+    }
 
     fun import(name: String, text: String, onDone: () -> Unit) = launchBusy {
         repository.importBatch(name, text)
