@@ -1,4 +1,4 @@
-# 晨词（MorningWords）
+# 淇澳背单词（MorningWords）
 
 面向高中生的离线 Android 单词晨测 App。产品严格以仓库中的 `设计文档.md` 与 `技术方案文档.md` 为实现基线。
 

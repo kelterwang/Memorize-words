@@ -1,12 +1,25 @@
 from pathlib import Path
 import re
 import unittest
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class AndroidProductStructureTest(unittest.TestCase):
+    def test_installed_app_name_preserves_application_identity(self) -> None:
+        android = "{http://schemas.android.com/apk/res/android}"
+        manifest = ET.parse(ROOT / "app/src/main/AndroidManifest.xml").getroot()
+        application = manifest.find("application")
+        self.assertEqual("@string/app_name", application.get(android + "label"))
+        strings = ET.parse(ROOT / "app/src/main/res/values/strings.xml").getroot()
+        self.assertEqual("淇澳背单词", strings.find("string[@name='app_name']").text)
+        activity = application.find("activity")
+        self.assertIsNone(activity.get(android + "label"))
+        build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
+        self.assertIn('applicationId = "com.morningwords"', build)
+
     def test_android_project_entry_points_exist(self) -> None:
         paths = [
             "settings.gradle.kts",
