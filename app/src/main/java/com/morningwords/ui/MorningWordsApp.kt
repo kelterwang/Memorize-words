@@ -417,7 +417,7 @@ private fun SetupScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
 }
 
 @Composable
-private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
+internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
     val session = state.session
     if (session == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
     if (session.session.phase == TestPhase.ROUND_SUMMARY && state.feedbackCard == null) {
@@ -523,9 +523,9 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
                 OutlinedButton(onClick = { vm.answer(TestResult.UNKNOWN) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("不会", modifier = Modifier.padding(7.dp), color = Coral) }
                 Button(onClick = { vm.answer(TestResult.KNOW) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("会", modifier = Modifier.padding(7.dp)) }
             }
-            if (session.session.type == SessionType.WRONG_REVIEW) {
-                TextButton(onClick = { vm.answer(TestResult.MASTERED) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("会（移出错词库）") }
-            }
+        }
+        if (session.session.type == SessionType.WRONG_REVIEW && answerShown) {
+            TextButton(onClick = { vm.answer(TestResult.MASTERED) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("会（移出错词库）") }
         }
     }
 }

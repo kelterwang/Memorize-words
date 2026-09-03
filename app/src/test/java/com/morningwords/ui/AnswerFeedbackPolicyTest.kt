@@ -26,4 +26,12 @@ class AnswerFeedbackPolicyTest {
     @Test fun `parent unknown answer advances immediately`() {
         assertFalse(needsStudentAnswerConfirmation(TestMode.PARENT, TestResult.UNKNOWN))
     }
+
+    @Test fun `student mastery requires seeing the answer first`() {
+        assertTrue(needsStudentAnswerConfirmation(TestMode.STUDENT, TestResult.MASTERED))
+    }
+
+    @Test fun `parent can mark mastery with the answer already shown`() {
+        assertFalse(needsStudentAnswerConfirmation(TestMode.PARENT, TestResult.MASTERED))
+    }
 }

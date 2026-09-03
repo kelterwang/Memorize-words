@@ -142,7 +142,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val current = mutable.value
         val session = current.session ?: return
         if (current.isBusy) return
-        if (needsStudentAnswerConfirmation(session.session.mode, result)) {
+        if (result == TestResult.MASTERED && session.session.type != SessionType.WRONG_REVIEW) return
+        if (needsStudentAnswerConfirmation(session.session.mode, result) && !current.answerVisible) {
             mutable.update { it.copy(feedbackCard = session.current, answerVisible = true) }
             return
         }
@@ -218,4 +219,4 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 internal fun needsStudentAnswerConfirmation(mode: TestMode, result: TestResult): Boolean =
-    mode == TestMode.STUDENT && result == TestResult.KNOW
+    mode == TestMode.STUDENT && (result == TestResult.KNOW || result == TestResult.MASTERED)
