@@ -30,9 +30,13 @@ object WordImporter {
         "^((?:$POS_TOKEN)\\.?(?:\\s*/\\s*(?:$POS_TOKEN)\\.?)*)(?:\\s+|$)",
         RegexOption.IGNORE_CASE,
     )
-    private val whitespacePattern = Regex("\\s+")
+    // Text copied from textbooks can omit the space between Chinese and English.
+    private val exampleBoundaryPattern = Regex("(?<=[\\u3400-\\u9FFF，；。！？）])\\s*(?=[A-Za-z0-9\"“‘'…\\.])|\\s+")
     private val hanPattern = Regex("[\\u3400-\\u9FFF]")
-    private val englishSentencePattern = Regex("^[A-Z][A-Za-z'’]*[,;:]?(?:\\s+\\S+)+[.!?][\\\"’”)]?$")
+    private val pageReferencePattern = Regex("\\s*[（(][Pp]\\.?\\s*\\d+(?:\\s*[-–]\\s*\\d+)?[）)]$")
+    private val exampleStartPattern = Regex("^[\"“‘'…]*(?:\\.{3})?[A-Za-z0-9]")
+    private val englishWordPattern = Regex("[A-Za-z]+(?:['’][A-Za-z]+)*")
+    private val sentenceEndPattern = Regex("[.!?…][\"'’”)]*$")
 
     fun normalize(value: String): String = value.trim().lowercase(Locale.ROOT)
 
@@ -74,10 +78,18 @@ object WordImporter {
     private fun splitMeaningAndExample(value: String): Pair<String?, String?> {
         val trimmed = value.trim()
         if (trimmed.isEmpty()) return null to null
-        whitespacePattern.findAll(trimmed).forEach { boundary ->
+        exampleBoundaryPattern.findAll(trimmed).forEach { boundary ->
             val meaning = trimmed.substring(0, boundary.range.first).trim()
             val example = trimmed.substring(boundary.range.last + 1).trim()
-            if (hanPattern.containsMatchIn(meaning) && englishSentencePattern.matches(example)) {
+            val sentence = example.replace(pageReferencePattern, "").trim()
+            // Keep citations in the example, but do not require full-sentence punctuation:
+            // textbook examples also include headings, fragments, numbers and quotations.
+            val isEnglishExample = exampleStartPattern.containsMatchIn(sentence) &&
+                !hanPattern.containsMatchIn(sentence) &&
+                (englishWordPattern.findAll(sentence).take(2).count() == 2 ||
+                    (englishWordPattern.containsMatchIn(sentence) &&
+                        (sentenceEndPattern.containsMatchIn(sentence) || pageReferencePattern.containsMatchIn(example))))
+            if (hanPattern.containsMatchIn(meaning) && isEnglishExample) {
                 return meaning to example
             }
         }
