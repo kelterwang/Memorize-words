@@ -210,4 +210,93 @@ class MorningWordsRepositoryTest {
             counts.cancel()
         }
     }
+
+    @Test fun deletingLastLibraryImmediatelyClearsWrongListAndDashboardButKeepsHistory() = runBlocking {
+        val batch = repository.importBatch("待删除", "apple\nbanana\ncherry")
+        val sessionId = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repeat(3) { repository.answer(sessionId, TestResult.UNKNOWN) }
+        repository.completeFromSummary(sessionId)
+        val history = repository.wrongWords.first().map { it.wrong }
+        val session = database.dao().session(sessionId)
+        val sessionWords = database.dao().sessionWords(sessionId)
+        val counts = repository.dashboard.map { it.wrongCount }.distinctUntilChanged().produceIn(this)
+        val lists = repository.wrongWords.map { it.size }.distinctUntilChanged().produceIn(this)
+        try {
+            assertEquals(3, withTimeout(5_000) { counts.receive() })
+            assertEquals(3, withTimeout(5_000) { lists.receive() })
+            assertTrue(repository.deleteBatch(batch))
+            assertEquals(0, withTimeout(5_000) { counts.receive() })
+            assertEquals(0, withTimeout(5_000) { lists.receive() })
+            assertTrue(repository.wrongWordGroups.first().isEmpty())
+            assertTrue(database.dao().activeWrongWords().isEmpty())
+            assertEquals(CreateSessionResult.Empty, repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(batch)))
+            assertEquals(session, database.dao().session(sessionId))
+            assertEquals(sessionWords, database.dao().sessionWords(sessionId))
+            history.forEach { assertEquals(it, database.dao().wrongWord(it.wordId)) }
+            for (table in listOf("TestRecord", "WrongRecord")) {
+                database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM $table").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(3, cursor.getInt(0))
+                }
+            }
+            // Fresh subscriptions must also hide orphaned wrong words from older versions.
+            val reopened = MorningWordsRepository(database)
+            assertEquals(0, reopened.dashboard.first().wrongCount)
+            assertTrue(reopened.wrongWords.first().isEmpty())
+        } finally {
+            counts.cancel()
+            lists.cancel()
+        }
+    }
+
+    @Test fun deletingOneLibraryKeepsSharedWrongWordsAndCountsEachOnlyOnce() = runBlocking {
+        val first = repository.importBatch("第一批", "apple\nbanana")
+        val second = repository.importBatch("第二批", "banana\ncherry")
+        val sessionId = (repository.createDailySession(listOf(first), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repeat(2) { repository.answer(sessionId, TestResult.UNKNOWN) }
+        repository.completeFromSummary(sessionId)
+        val counts = repository.dashboard.map { it.wrongCount }.distinctUntilChanged().produceIn(this)
+        val lists = repository.wrongWords.map { rows -> rows.map { it.word.word }.toSet() }.distinctUntilChanged().produceIn(this)
+        try {
+            assertEquals(2, withTimeout(5_000) { counts.receive() })
+            assertEquals(setOf("apple", "banana"), withTimeout(5_000) { lists.receive() })
+            assertTrue(repository.deleteBatch(first))
+            assertEquals(1, withTimeout(5_000) { counts.receive() })
+            assertEquals(setOf("banana"), withTimeout(5_000) { lists.receive() })
+            assertEquals(listOf("banana"), database.dao().activeWrongWords().map { it.word.word })
+            assertEquals(second, repository.wrongWordGroups.first().single().batchId)
+            assertTrue(repository.deleteBatch(second))
+            assertEquals(0, withTimeout(5_000) { counts.receive() })
+            assertTrue(withTimeout(5_000) { lists.receive() }.isEmpty())
+        } finally {
+            counts.cancel()
+            lists.cancel()
+        }
+    }
+
+    @Test fun reimportingDeletedLibraryDoesNotReviveOldPendingWordsButNewErrorsDo() = runTest {
+        val oldBatch = repository.importBatch("旧词库", "apple")
+        val sessionId = (repository.createDailySession(listOf(oldBatch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repository.answer(sessionId, TestResult.UNKNOWN)
+        repository.completeFromSummary(sessionId)
+        val oldWrong = repository.wrongWords.first().single().wrong
+        assertTrue(repository.deleteBatch(oldBatch))
+        val newBatch = repository.importBatch("重新导入", "apple")
+        assertEquals(oldWrong.wordId, repository.wordsInBatch(newBatch).single().id)
+        assertEquals(0, repository.dashboard.first().wrongCount)
+        assertTrue(repository.wrongWords.first().isEmpty())
+        assertTrue(repository.wrongWordGroups.first().isEmpty())
+        assertTrue(database.dao().activeWrongWords().isEmpty())
+        assertEquals(CreateSessionResult.Empty, repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(newBatch)))
+        assertEquals(oldWrong, database.dao().wrongWord(oldWrong.wordId))
+
+        val newSession = (repository.createDailySession(listOf(newBatch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repository.answer(newSession, TestResult.UNKNOWN)
+        repository.completeFromSummary(newSession)
+        assertEquals(1, repository.dashboard.first().wrongCount)
+        assertEquals("apple", repository.wrongWords.first().single().word.word)
+        assertEquals(newBatch, repository.wrongWordGroups.first().single().batchId)
+        assertEquals(2, database.dao().wrongWord(oldWrong.wordId)?.wrongCount)
+        assertTrue(repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(newBatch)) is CreateSessionResult.Created)
+    }
 }

@@ -63,7 +63,15 @@ interface MorningWordsDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertWrongRecord(value: WrongRecordEntity): Long
 
     @Transaction
-    @Query("SELECT * FROM WrongWord WHERE status='ACTIVE' ORDER BY lastWrongAt DESC")
+    @Query("""
+        SELECT * FROM WrongWord
+        WHERE status='ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM BatchWord bw JOIN WordBatch b ON b.id=bw.batchId
+              WHERE bw.wordId=WrongWord.wordId AND b.createdAt<=WrongWord.lastWrongAt
+          )
+        ORDER BY lastWrongAt DESC
+    """)
     fun observeWrongWords(): Flow<List<WrongWordRow>>
 
     @Query("""
@@ -77,10 +85,26 @@ interface MorningWordsDao {
     fun observeWrongWordBatchLinks(): Flow<List<WrongWordBatchLink>>
 
     @Transaction
-    @Query("SELECT * FROM WrongWord WHERE status='ACTIVE' ORDER BY lastWrongAt DESC")
+    @Query("""
+        SELECT * FROM WrongWord
+        WHERE status='ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM BatchWord bw JOIN WordBatch b ON b.id=bw.batchId
+              WHERE bw.wordId=WrongWord.wordId AND b.createdAt<=WrongWord.lastWrongAt
+          )
+        ORDER BY lastWrongAt DESC
+    """)
     suspend fun activeWrongWords(): List<WrongWordRow>
 
-    @Query("SELECT COUNT(*) FROM WrongWord WHERE status='ACTIVE'") fun observeWrongCount(): Flow<Int>
+    @Query("""
+        SELECT COUNT(*) FROM WrongWord
+        WHERE status='ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM BatchWord bw JOIN WordBatch b ON b.id=bw.batchId
+              WHERE bw.wordId=WrongWord.wordId AND b.createdAt<=WrongWord.lastWrongAt
+          )
+    """)
+    fun observeWrongCount(): Flow<Int>
     @Query("SELECT COUNT(*) FROM WordBatch") fun observeBatchCount(): Flow<Int>
     @Query("SELECT COUNT(DISTINCT wordId) FROM BatchWord") fun observeWordCount(): Flow<Int>
 
@@ -93,6 +117,10 @@ interface MorningWordsDao {
           AND wr.wrongAt BETWEEN :start AND :end
           AND ww.status='ACTIVE'
           AND bw.batchId IN (:batchIds)
+          AND EXISTS (
+              SELECT 1 FROM BatchWord currentLink JOIN WordBatch currentBatch ON currentBatch.id=currentLink.batchId
+              WHERE currentLink.wordId=ww.wordId AND currentBatch.createdAt<=ww.lastWrongAt
+          )
         GROUP BY wr.wordId
         ORDER BY MAX(wr.wrongAt) DESC
     """)
