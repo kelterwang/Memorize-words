@@ -5,6 +5,55 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WordImporterTest {
+    @Test fun `imports words and phrases sharing the first word independently`() {
+        val preview = WordImporter.parseText("""
+            look v. 看 Look at the sky.
+            look forward to （兴奋地）期待，盼望 I'm looking forward to it! (P14)
+            look after phr. 照顾 Look after yourself.
+            in prep. 在……里面
+            in panic 惊慌地 I looked at them in panic. (P4)
+            in particular 尤其
+            go v. 去
+            go all out 全力以赴，竭尽全力 But then I figured I'd better just go all out. (P11)
+        """.trimIndent())
+        assertEquals(0, preview.duplicateCount)
+        assertEquals(0, preview.errorCount)
+        assertEquals(listOf("look", "look forward to", "look after", "in", "in panic", "in particular", "go", "go all out"), preview.accepted.map { it.word })
+        assertEquals("（兴奋地）期待，盼望", preview.accepted[1].meaning)
+        assertEquals("I'm looking forward to it! (P14)", preview.accepted[1].example)
+        assertEquals("phr", preview.accepted[2].partOfSpeech)
+    }
+
+    @Test fun `normalizes the entire phrase before duplicate detection`() {
+        val preview = WordImporter.parseText("look forward to\n LOOK   forward  TO 期待\nlook after\nbutterflies in one's stomach\nButterflies in one’s stomach 情绪紧张")
+        assertEquals(3, preview.accepted.size)
+        assertEquals(2, preview.duplicateCount)
+        assertEquals("LOOK forward TO", preview.lines[1].word)
+        assertEquals("look forward to", preview.lines[1].normalizedWord)
+        assertEquals("butterflies in one's stomach", preview.lines[4].normalizedWord)
+    }
+
+    @Test fun `handles bare phrases POS and attached Chinese meanings`() {
+        val preview = WordImporter.parseText("one by one\none after another依次地\nlook forward to phr.期待\nwell-known adj. 著名的")
+        assertEquals(listOf("one by one", "one after another", "look forward to", "well-known"), preview.accepted.map { it.word })
+        assertNull(preview.accepted[0].meaning)
+        assertEquals("依次地", preview.accepted[1].meaning)
+        assertEquals("期待", preview.accepted[2].meaning)
+        assertEquals("phr", preview.accepted[2].partOfSpeech)
+    }
+
+    @Test fun `keeps tab separated English definitions out of phrases`() {
+        val line = WordImporter.parseText("look after\ttake care of someone").accepted.single()
+        assertEquals("look after", line.word)
+        assertEquals("take care of someone", line.meaning)
+    }
+
+    @Test fun `rejects invalid entry characters instead of accepting a partial word`() {
+        val preview = WordImporter.parseText("abc123 释义\nfoo_bar 释义\n12345 ???")
+        assertEquals(3, preview.errorCount)
+        assertEquals(0, preview.accepted.size)
+    }
+
     @Test fun `normalizes and removes duplicates within a batch`() {
         val preview = WordImporter.parseText("Maintain v. 保持\n maintain \nachieve")
         assertEquals(2, preview.accepted.size)

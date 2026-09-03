@@ -5,6 +5,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.morningwords.data.local.AppDatabase
+import com.morningwords.data.entity.WordEntity
+import com.morningwords.data.entity.WordBatchEntity
+import com.morningwords.data.entity.BatchWordEntity
 import com.morningwords.domain.model.SessionStatus
 import com.morningwords.domain.model.TestMode
 import com.morningwords.domain.model.TestPhase
@@ -37,6 +40,77 @@ class MorningWordsRepositoryTest {
     }
 
     @After fun tearDown() = database.close()
+
+    @Test fun wordsAndPhrasesPersistSeparatelyAndOnlyExactPhrasesDeduplicate() = runTest {
+        val first = repository.importBatch("短语", "look v. 看\nlook forward to 期待\nlook after 照顾\n LOOK   forward TO 期待")
+        val second = repository.importBatch("第二批", "LOOK forward TO 期待\nlook into 调查")
+        assertEquals(listOf("look", "look forward to", "look after"), repository.wordsInBatch(first).map { it.word })
+        assertEquals(4, repository.dashboard.first().wordCount)
+        val firstPhrase = repository.wordsInBatch(first)[1]
+        assertEquals(firstPhrase.id, repository.wordsInBatch(second)[0].id)
+        val sessionId = (repository.createDailySession(listOf(first, second), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        assertEquals(4, repository.loadSession(sessionId)?.session?.totalCount)
+        assertEquals(setOf("look", "look forward to", "look after", "look into"), database.dao().sessionWords(sessionId).map { it.word.word }.toSet())
+    }
+
+    private suspend fun legacyBatch(name: String, wordId: Long, raw: String): Long {
+        val batch = database.dao().insertBatch(WordBatchEntity(batchName = name, createdAt = now++))
+        database.dao().insertBatchWord(BatchWordEntity(batchId = batch, wordId = wordId, requiredMeaning = "旧释义", sortOrder = 0, rawText = raw))
+        return batch
+    }
+
+    @Test fun repairsTruncatedPhraseInPlaceAndKeepsLearningHistory() = runTest {
+        val id = database.dao().insertWord(WordEntity(word = "one", normalizedWord = "one", meaning = "by one 依次地", createdAt = now++, updatedAt = now++))
+        val batch = legacyBatch("旧短语", id, "one by one 依次地 Come to the front one by one. (P3)")
+        val sessionId = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repository.answer(sessionId, TestResult.UNKNOWN)
+        val wrongBefore = repository.wrongWords.first().single().wrong
+        val sessionBefore = database.dao().session(sessionId)
+        repository.repairImportedWordFields()
+        val repaired = repository.wordsInBatch(batch).single()
+        assertEquals(id, repaired.id)
+        assertEquals("one by one", repaired.word)
+        assertEquals("one by one", repaired.normalizedWord)
+        assertEquals("依次地", repaired.meaning)
+        assertEquals("依次地", database.dao().batchWords(batch).single().requiredMeaning)
+        assertEquals("Come to the front one by one. (P3)", repaired.example)
+        assertEquals(wrongBefore, repository.wrongWords.first().single().wrong)
+        assertEquals(sessionBefore, database.dao().session(sessionId))
+        repository.repairImportedWordFields()
+        assertEquals(repaired, repository.wordsInBatch(batch).single())
+    }
+
+    @Test fun splitsLegacySharedWordIntoDistinctLibraryPhrasesWithoutMovingHistory() = runTest {
+        val id = database.dao().insertWord(WordEntity(word = "look", normalizedWord = "look", meaning = "看", createdAt = now++, updatedAt = now++))
+        val wordBatch = legacyBatch("单词", id, "look v. 看")
+        val phraseBatch = legacyBatch("短语", id, "look forward to 期待")
+        val otherPhraseBatch = legacyBatch("另一短语", id, "look after 照顾")
+        val sessionId = (repository.createDailySession(listOf(wordBatch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repository.answer(sessionId, TestResult.UNKNOWN)
+        val wrongBefore = repository.wrongWords.first().single().wrong
+        repository.repairImportedWordFields()
+        assertEquals(id, repository.wordsInBatch(wordBatch).single().id)
+        assertEquals("look forward to", repository.wordsInBatch(phraseBatch).single().word)
+        assertEquals("look after", repository.wordsInBatch(otherPhraseBatch).single().word)
+        assertEquals(3, repository.dashboard.first().wordCount)
+        assertEquals(wrongBefore, repository.wrongWords.first().single().wrong)
+        repository.repairImportedWordFields()
+        assertEquals(3, repository.dashboard.first().wordCount)
+    }
+
+    @Test fun existingFullPhraseIsReusedWhenRepairingTruncatedIdentity() = runTest {
+        val batch = repository.importBatch("正确短语", "look forward to 期待")
+        val target = repository.wordsInBatch(batch).single()
+        val old = database.dao().insertWord(WordEntity(word = "look", normalizedWord = "look", createdAt = now++, updatedAt = now++))
+        database.dao().insertBatchWord(BatchWordEntity(batchId = batch, wordId = old, requiredMeaning = "旧释义", sortOrder = 1, rawText = "look forward to 期待"))
+        val other = legacyBatch("旧短语", old, "look forward to 期待")
+        repository.repairImportedWordFields()
+        assertEquals(target.id, repository.wordsInBatch(batch).single().id)
+        assertEquals(target.id, repository.wordsInBatch(other).single().id)
+        assertNotNull(database.dao().word(old))
+        repository.repairImportedWordFields()
+        assertEquals(1, repository.dashboard.first().wordCount)
+    }
 
     @Test fun importDeduplicatesAcrossBatchesAndCountsSharedWordsOncePerSession() = runTest {
         val first = repository.importBatch("第一批", "Maintain v. 保持\nachieve v. 实现")

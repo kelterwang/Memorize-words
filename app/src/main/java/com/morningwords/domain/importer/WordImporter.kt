@@ -24,10 +24,12 @@ data class ImportPreview(val lines: List<ImportLine>) {
 }
 
 object WordImporter {
-    private val wordPattern = Regex("^[A-Za-z][A-Za-z'’-]*(?:\\s+[A-Za-z][A-Za-z'’-]*)?$")
+    private val wordPattern = Regex("^[A-Za-z][A-Za-z'’-]*(?:\\s+[A-Za-z][A-Za-z'’-]*)*$")
+    private val leadingPhrasePattern = Regex("^[A-Za-z][A-Za-z'’-]*(?:\\s+[A-Za-z][A-Za-z'’-]*)*")
+    private val whitespacePattern = Regex("\\s+")
     private const val POS_TOKEN = "adj|adv|prep|conj|pron|num|art|det|aux|modal|interj|int|abbr|phr|vt|vi|n|v"
     private val posPattern = Regex(
-        "^((?:$POS_TOKEN)\\.?(?:\\s*/\\s*(?:$POS_TOKEN)\\.?)*)(?:\\s+|$)",
+        "^((?:$POS_TOKEN)\\.?(?:\\s*/\\s*(?:$POS_TOKEN)\\.?)*)(?:\\s+|(?=[\\u3400-\\u9FFF（(])|$)",
         RegexOption.IGNORE_CASE,
     )
     // Text copied from textbooks can omit the space between Chinese and English.
@@ -38,23 +40,40 @@ object WordImporter {
     private val englishWordPattern = Regex("[A-Za-z]+(?:['’][A-Za-z]+)*")
     private val sentenceEndPattern = Regex("[.!?…][\"'’”)]*$")
 
-    fun normalize(value: String): String = value.trim().lowercase(Locale.ROOT)
+    fun normalize(value: String): String = value.trim().replace(whitespacePattern, " ")
+        .replace('’', '\'').lowercase(Locale.ROOT)
+
+    private fun extractEntry(raw: String): String {
+        // A POS marker or an explicit column separator ends the entry. Otherwise,
+        // keep the entire English phrase preceding the Chinese definition.
+        whitespacePattern.findAll(raw).forEach { boundary ->
+            val prefix = raw.substring(0, boundary.range.first)
+            val remainder = raw.substring(boundary.range.last + 1)
+            if (wordPattern.matches(prefix) && posPattern.containsMatchIn(remainder)) return prefix
+        }
+        val phrase = leadingPhrasePattern.find(raw)?.value ?: return raw.substringBefore(' ')
+        // Tabs can separate an entry from an English-only definition. Spaces
+        // within a phrase (including repeated spaces) are normalized for deduplication.
+        return phrase.substringBefore('\t').trim()
+    }
 
     fun parseText(content: String): ImportPreview {
         val seen = mutableSetOf<String>()
         val lines = content.lines().mapIndexedNotNull { index, original ->
             val raw = original.trim()
             if (raw.isEmpty()) return@mapIndexedNotNull null
-            val firstWhitespace = raw.indexOfFirst(Char::isWhitespace)
-            val candidate = if (firstWhitespace < 0) raw else raw.substring(0, firstWhitespace)
-            if (!wordPattern.matches(candidate)) {
-                return@mapIndexedNotNull ImportLine(index + 1, original, null, null, status = ImportLineStatus.ERROR, reason = "未识别到英文单词")
+            val entry = extractEntry(raw)
+            val candidate = entry.replace(whitespacePattern, " ")
+            val next = raw.getOrNull(entry.length)
+            val hasEntryBoundary = next == null || next.isWhitespace() || next in '\u3400'..'\u9FFF' || next in "（("
+            if (!wordPattern.matches(candidate) || !hasEntryBoundary) {
+                return@mapIndexedNotNull ImportLine(index + 1, original, null, null, status = ImportLineStatus.ERROR, reason = "未识别到英文单词或短语")
             }
             val normalized = normalize(candidate)
             if (!seen.add(normalized)) {
                 return@mapIndexedNotNull ImportLine(index + 1, original, candidate, normalized, status = ImportLineStatus.DUPLICATE, reason = "批次内重复")
             }
-            val tail = raw.removePrefix(candidate).trim()
+            val tail = raw.removePrefix(entry).trim()
             val posMatch = posPattern.find(tail)
             val rawPos = posMatch?.groupValues?.get(1)?.replace(Regex("\\s*/\\s*"), "/")
             val pos = rawPos?.let { if ('/' in it) it else it.removeSuffix(".") }?.takeIf { it.isNotBlank() }

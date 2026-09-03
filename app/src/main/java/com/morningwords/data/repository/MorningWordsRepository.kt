@@ -96,6 +96,7 @@ class MorningWordsRepository(
 
     /** Repairs rows imported by older versions that kept POS and examples inside meaning. */
     suspend fun repairImportedWordFields() = db.withTransaction {
+        repairImportedPhraseIdentities()
         val repairedWordIds = mutableSetOf<Long>()
         dao.allBatchWords().forEach { batchWord ->
             val rawText = batchWord.rawText ?: return@forEach
@@ -107,6 +108,42 @@ class MorningWordsRepository(
             val existing = dao.word(batchWord.wordId) ?: return@forEach
             val repaired = repairWordFromRaw(existing, parsed, clock())
             if (repaired != existing) dao.updateWord(repaired)
+        }
+    }
+
+    private suspend fun repairImportedPhraseIdentities() {
+        dao.allBatchWords().groupBy { it.wordId }.forEach { (wordId, links) ->
+            val existing = dao.word(wordId) ?: return@forEach
+            val parsedLinks = links.map { link ->
+                link to link.rawText?.let { WordImporter.parseText(it).accepted.singleOrNull() }
+            }
+            val keys = parsedLinks.map { it.second?.normalizedWord }.toSet()
+            val singleKey = keys.singleOrNull()
+            // An unambiguous truncation can keep its identity and all learning history.
+            if (singleKey != null && singleKey != existing.normalizedWord && dao.findWord(singleKey) == null) {
+                dao.updateWord(existing.copy(
+                    word = checkNotNull(parsedLinks.first().second?.word),
+                    normalizedWord = singleKey,
+                    updatedAt = clock(),
+                ))
+                return@forEach
+            }
+            // Some old batches shared the first word of different phrases. Split only
+            // their library links; historical answers remain attached to the original ID.
+            parsedLinks.forEach linkLoop@ { (link, parsed) ->
+                if (parsed == null || parsed.normalizedWord == existing.normalizedWord) return@linkLoop
+                val key = checkNotNull(parsed.normalizedWord)
+                val targetId = dao.findWord(key)?.id ?: dao.insertWord(WordEntity(
+                    word = checkNotNull(parsed.word), normalizedWord = key,
+                    partOfSpeech = parsed.partOfSpeech, meaning = parsed.meaning,
+                    example = parsed.example, createdAt = existing.createdAt, updatedAt = clock(),
+                ))
+                if (dao.batchWords(link.batchId).any { it.wordId == targetId }) {
+                    dao.deleteBatchWord(link.id)
+                } else {
+                    dao.updateBatchWord(link.copy(wordId = targetId))
+                }
+            }
         }
     }
 

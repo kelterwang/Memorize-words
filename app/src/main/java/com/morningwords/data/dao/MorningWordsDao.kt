@@ -18,6 +18,8 @@ interface MorningWordsDao {
     @Insert suspend fun insertBatch(value: WordBatchEntity): Long
     @Insert suspend fun insertBatchWord(value: BatchWordEntity): Long
     @Update suspend fun updateBatchWord(value: BatchWordEntity)
+    @Query("DELETE FROM BatchWord WHERE id=:id")
+    suspend fun deleteBatchWord(id: Long)
     @Query("UPDATE WordBatch SET batchName=:name WHERE id=:batchId")
     suspend fun renameBatch(batchId: Long, name: String): Int
 
