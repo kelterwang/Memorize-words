@@ -6,4 +6,6 @@ build/
 *.iml
 captures/
 .DS_Store
-
+.local-runtime/
+backups/
+安装包/
