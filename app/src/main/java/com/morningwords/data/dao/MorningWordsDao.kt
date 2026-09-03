@@ -109,22 +109,20 @@ interface MorningWordsDao {
     @Query("SELECT COUNT(DISTINCT wordId) FROM BatchWord") fun observeWordCount(): Flow<Int>
 
     @Query("""
-        SELECT wr.wordId
-        FROM WrongRecord wr
-        JOIN WrongWord ww ON ww.wordId=wr.wordId
-        JOIN BatchWord bw ON bw.wordId=wr.wordId
-        WHERE wr.recordType='FIRST_ROUND_WRONG'
-          AND wr.wrongAt BETWEEN :start AND :end
-          AND ww.status='ACTIVE'
-          AND bw.batchId IN (:batchIds)
+        SELECT ww.wordId
+        FROM WrongWord ww
+        WHERE ww.status='ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM BatchWord bw
+              WHERE bw.wordId=ww.wordId AND bw.batchId IN (:batchIds)
+          )
           AND EXISTS (
               SELECT 1 FROM BatchWord currentLink JOIN WordBatch currentBatch ON currentBatch.id=currentLink.batchId
               WHERE currentLink.wordId=ww.wordId AND currentBatch.createdAt<=ww.lastWrongAt
           )
-        GROUP BY wr.wordId
-        ORDER BY MAX(wr.wrongAt) DESC
+        ORDER BY ww.lastWrongAt DESC, ww.wordId
     """)
-    suspend fun reviewWordIds(start: Long, end: Long, batchIds: List<Long>): List<Long>
+    suspend fun reviewWordIds(batchIds: List<Long>): List<Long>
 
     @Query("SELECT COUNT(*) FROM SessionBatch sb JOIN TestSession ts ON ts.id=sb.sessionId WHERE sb.batchId=:batchId AND ts.status='IN_PROGRESS'")
     suspend fun activeBatchReferences(batchId: Long): Int

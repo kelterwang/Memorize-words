@@ -116,6 +116,19 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn('Text("全选")', ui)
         self.assertIn('Text("清空")', ui)
 
+    def test_wrong_review_has_no_date_filter_or_hidden_default_range(self) -> None:
+        ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        view_model = (ROOT / "app/src/main/java/com/morningwords/ui/AppViewModel.kt").read_text(encoding="utf-8")
+        dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
+        self.assertNotIn("选择错误发生时间", ui)
+        self.assertNotIn("最近 1 个月", ui)
+        self.assertNotIn("最近 3 个月", ui)
+        self.assertIn("vm.startWrongReview(selectedBatchIds)", ui)
+        self.assertIn("fun startWrongReview(batchIds: Set<Long>", view_model)
+        self.assertNotIn("所选文件夹和时间范围", view_model)
+        self.assertNotIn("BETWEEN :start AND :end", dao)
+        self.assertIn("suspend fun reviewWordIds(batchIds: List<Long>)", dao)
+
     def test_library_rename_is_shared_with_wrong_word_categories(self) -> None:
         dao = (ROOT / "app/src/main/java/com/morningwords/data/dao/MorningWordsDao.kt").read_text(encoding="utf-8")
         ui = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")

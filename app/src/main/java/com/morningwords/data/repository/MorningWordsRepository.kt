@@ -193,12 +193,12 @@ class MorningWordsRepository(
         CreateSessionResult.Created(sessionId)
     }
 
-    suspend fun createWrongReview(start: Long, end: Long, mode: TestMode, batchIds: List<Long>): CreateSessionResult = db.withTransaction {
+    suspend fun createWrongReview(mode: TestMode, batchIds: List<Long>): CreateSessionResult = db.withTransaction {
         dao.activeSession()?.let { return@withTransaction CreateSessionResult.AlreadyInProgress(it.id) }
         val existingBatchIds = dao.getBatches().mapTo(mutableSetOf()) { it.id }
         val selectedBatchIds = batchIds.distinct().filter { it in existingBatchIds }
         if (selectedBatchIds.isEmpty()) return@withTransaction CreateSessionResult.Empty
-        val wordIds = dao.reviewWordIds(start, end, selectedBatchIds)
+        val wordIds = dao.reviewWordIds(selectedBatchIds)
         if (wordIds.isEmpty()) return@withTransaction CreateSessionResult.Empty
         val now = clock()
         val sessionId = dao.insertSession(

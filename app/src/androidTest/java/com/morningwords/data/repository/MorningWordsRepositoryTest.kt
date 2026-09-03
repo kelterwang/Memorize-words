@@ -12,6 +12,7 @@ import com.morningwords.domain.model.SessionStatus
 import com.morningwords.domain.model.TestMode
 import com.morningwords.domain.model.TestPhase
 import com.morningwords.domain.model.TestResult
+import com.morningwords.domain.model.WrongWordStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -229,7 +230,7 @@ class MorningWordsRepositoryTest {
             assertEquals(0, withTimeout(5_000) { lists.receive() })
             assertTrue(repository.wrongWordGroups.first().isEmpty())
             assertTrue(database.dao().activeWrongWords().isEmpty())
-            assertEquals(CreateSessionResult.Empty, repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(batch)))
+            assertEquals(CreateSessionResult.Empty, repository.createWrongReview(TestMode.STUDENT, listOf(batch)))
             assertEquals(session, database.dao().session(sessionId))
             assertEquals(sessionWords, database.dao().sessionWords(sessionId))
             history.forEach { assertEquals(it, database.dao().wrongWord(it.wordId)) }
@@ -287,7 +288,7 @@ class MorningWordsRepositoryTest {
         assertTrue(repository.wrongWords.first().isEmpty())
         assertTrue(repository.wrongWordGroups.first().isEmpty())
         assertTrue(database.dao().activeWrongWords().isEmpty())
-        assertEquals(CreateSessionResult.Empty, repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(newBatch)))
+        assertEquals(CreateSessionResult.Empty, repository.createWrongReview(TestMode.STUDENT, listOf(newBatch)))
         assertEquals(oldWrong, database.dao().wrongWord(oldWrong.wordId))
 
         val newSession = (repository.createDailySession(listOf(newBatch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
@@ -297,6 +298,36 @@ class MorningWordsRepositoryTest {
         assertEquals("apple", repository.wrongWords.first().single().word.word)
         assertEquals(newBatch, repository.wrongWordGroups.first().single().batchId)
         assertEquals(2, database.dao().wrongWord(oldWrong.wordId)?.wrongCount)
-        assertTrue(repository.createWrongReview(0, Long.MAX_VALUE, TestMode.STUDENT, listOf(newBatch)) is CreateSessionResult.Created)
+        assertTrue(repository.createWrongReview(TestMode.STUDENT, listOf(newBatch)) is CreateSessionResult.Created)
+    }
+
+    @Test fun folderReviewIncludesYearOldErrorsDeduplicatesAndExcludesMasteredOrUnselectedWords() = runTest {
+        val first = repository.importBatch("旧错词", "ancient\nshared\nmastered")
+        val second = repository.importBatch("最近错词", "shared\nrecent")
+        val unselected = repository.importBatch("未选择", "outside")
+        suspend fun failBatch(batch: Long) {
+            val session = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+            repeat(repository.wordsInBatch(batch).size) { repository.answer(session, TestResult.UNKNOWN) }
+            repository.completeFromSummary(session)
+        }
+        failBatch(first)
+        val mastered = checkNotNull(database.dao().findWord("mastered"))
+        val wrong = checkNotNull(database.dao().wrongWord(mastered.id))
+        database.dao().updateWrongWord(wrong.copy(status = WrongWordStatus.MASTERED, masteredAt = now++))
+        now += 365L * 86_400_000L
+        failBatch(second)
+        failBatch(unselected)
+
+        val singleFolder = (repository.createWrongReview(TestMode.PARENT, listOf(first)) as CreateSessionResult.Created).sessionId
+        assertEquals(setOf("ancient", "shared"), database.dao().sessionWords(singleFolder).map { it.word.word }.toSet())
+        assertEquals(TestMode.PARENT, repository.loadSession(singleFolder)?.session?.mode)
+        repository.abandon(singleFolder)
+
+        val combined = (repository.createWrongReview(TestMode.STUDENT, listOf(first, second, first)) as CreateSessionResult.Created).sessionId
+        assertEquals(3, repository.loadSession(combined)?.session?.totalCount)
+        assertEquals(listOf("recent", "shared", "ancient"), database.dao().sessionWords(combined).map { it.word.word })
+        assertEquals(TestMode.STUDENT, repository.loadSession(combined)?.session?.mode)
+        repository.abandon(combined)
+        assertEquals(CreateSessionResult.Empty, repository.createWrongReview(TestMode.STUDENT, emptyList()))
     }
 }
