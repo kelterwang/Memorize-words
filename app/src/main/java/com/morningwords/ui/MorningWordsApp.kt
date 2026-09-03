@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -293,8 +292,8 @@ private fun BatchDetailScreen(batchId: Long, state: AppUiState, nav: NavHostCont
                         Column(Modifier.padding(17.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("${index + 1}", color = Gold, fontWeight = FontWeight.Bold, modifier = Modifier.width(34.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(word.word, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                                Column(Modifier.weight(1f).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    VocabularyHeading(word.word, VocabularyHeadingSize.LIST)
                                     if (!expanded) Text(word.meaning ?: "暂无释义", color = Ink.copy(alpha = .58f), maxLines = 1)
                                 }
                                 word.partOfSpeech?.let { Text(it, color = Sage, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(end = 6.dp)) }
@@ -503,27 +502,7 @@ private fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
         }
         Spacer(Modifier.height(16.dp))
         AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
-            Surface(shape = RoundedCornerShape(30.dp), color = Paper, shadowElevation = 2.dp, modifier = Modifier.fillMaxSize()) {
-                Column(Modifier.fillMaxSize().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text(animatedCard.word, fontSize = if (state.settings.largeFont) 48.sp else 42.sp, fontWeight = FontWeight.Bold, color = Ink)
-                    animatedCard.phonetic?.let { Text(it, color = Ink.copy(alpha = .5f), modifier = Modifier.padding(top = 4.dp)) }
-                    IconButton(onClick = ::speak) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "发音", tint = if (ttsReady) Sage else Color.Gray) }
-                    if (answerShown) {
-                        HorizontalDivider(Modifier.padding(vertical = 22.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = .45f))
-                        animatedCard.partOfSpeech?.let { Text(it, color = Sage, fontWeight = FontWeight.Bold) }
-                        animatedCard.requiredMeaning?.let { Text(it, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)) }
-                        if (animatedCard.meaning != animatedCard.requiredMeaning) animatedCard.meaning?.let { Text(it, textAlign = TextAlign.Center, color = Ink.copy(alpha = .7f), modifier = Modifier.padding(top = 8.dp)) }
-                        animatedCard.example?.let {
-                            Text(
-                                highlightedExample(it, animatedCard.word),
-                                textAlign = TextAlign.Center,
-                                color = Ink.copy(alpha = .6f),
-                                modifier = Modifier.padding(top = 12.dp),
-                            )
-                        }
-                    } else Text("想好后再作答", color = Ink.copy(alpha = .38f), modifier = Modifier.padding(top = 28.dp))
-                }
-            }
+            StudyWordCard(animatedCard, answerShown, state.settings.largeFont, ttsReady, ::speak)
         }
         Spacer(Modifier.height(16.dp))
         if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
@@ -660,7 +639,10 @@ private fun WrongBatchScreen(group: com.morningwords.data.repository.WrongWordGr
 @Composable private fun WrongRow(row: WrongWordRow, onClick: () -> Unit) {
     Surface(shape = RoundedCornerShape(18.dp), color = Paper, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text(row.word.word, fontSize = 19.sp, fontWeight = FontWeight.SemiBold); row.word.meaning?.let { Text(it, color = Ink.copy(.58f)) } }
+            Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                VocabularyHeading(row.word.word, VocabularyHeadingSize.LIST)
+                row.word.meaning?.let { Text(it, color = Ink.copy(.58f)) }
+            }
             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFE5DE)) { Text("错 ${row.wrong.wrongCount + row.wrong.reviewWrongCount} 次", color = Coral, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium) }
             Icon(Icons.Outlined.ChevronRight, "查看详情", tint = Ink.copy(.45f), modifier = Modifier.padding(start = 8.dp))
         }
@@ -678,7 +660,7 @@ private fun WrongWordDetailScreen(row: WrongWordRow?, nav: NavHostController) {
                 item {
                     Surface(shape = RoundedCornerShape(26.dp), color = Paper, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(row.word.word, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                            VocabularyHeading(row.word.word, VocabularyHeadingSize.DETAIL)
                             row.word.phonetic?.let { Text(it, color = Ink.copy(.5f), modifier = Modifier.padding(top = 5.dp)) }
                             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFE5DE), modifier = Modifier.padding(top = 16.dp)) {
                                 Text("累计答错 ${row.wrong.wrongCount + row.wrong.reviewWrongCount} 次", color = Coral, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
