@@ -1,0 +1,3 @@
+# Preserve upstream export whitespace; payload hashes check exact file contents.
+*.html whitespace=-blank-at-eol,-blank-at-eof
+design-system/DESIGN.md whitespace=-blank-at-eol,-blank-at-eof

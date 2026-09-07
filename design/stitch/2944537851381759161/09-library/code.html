@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,600;0,700;1,600&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#fff8f2;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"secondary-container":"#ffcd70","on-primary-fixed":"#05210f","surface":"#fff8f2","on-secondary-fixed-variant":"#5e4200","tag-adj-text":"#3D6B5E","secondary-fixed-dim":"#f0bf64","on-error-container":"#93000a","surface-bright":"#fff8f2","on-primary-container":"#d3f4d7","text-secondary":"#7D756A","tag-verb-bg":"#EFE3F2","background":"#fff8f2","tertiary-container":"#a7513e","surface-variant":"#e9e1d9","outline-variant":"#c2c8c0","primary-fixed":"#caebce","primary-fixed-dim":"#afceb3","on-primary-fixed-variant":"#314d38","primary-light-tint":"#DDE8DA","surface-container-highest":"#e9e1d9","on-surface":"#1e1b16","error":"#ba1a1a","surface-dim":"#e0d9d1","on-error":"#ffffff","secondary":"#7c5800","on-tertiary-fixed":"#3d0600","on-surface-variant":"#424842","surface-container":"#f4ede5","secondary-fixed":"#ffdea7","error-container":"#ffdad6","surface-container-lowest":"#ffffff","surface-container-high":"#eee7df","surface-tint":"#48654f","tertiary-fixed":"#ffdad3","danger-soft":"#F7E4DE","tag-noun-text":"#3A6389","on-secondary":"#ffffff","text-muted":"#A8A096","surface-card":"#FFFDF9","primary-container":"#54715a","on-secondary-container":"#785500","accent-gold-soft":"#FAF0DC","highlight-target-word":"#D32F2F","tag-adj-bg":"#E2ECE9","primary-deep":"#3E5442","on-primary":"#ffffff","tag-noun-bg":"#E1EBF5","surface-canvas":"#FFF9F1","inverse-surface":"#33302b","tag-verb-text":"#754382","surface-card-subtle":"#FBF7F0","surface-container-low":"#faf2ea","primary":"#3c5843","on-tertiary-container":"#ffe6e1","outline":"#737972","on-tertiary-fixed-variant":"#7a2f1f","tertiary":"#883a29","accent-warm-sand":"#F3EBDD","inverse-on-surface":"#f7f0e7","inverse-primary":"#afceb3","tertiary-fixed-dim":"#ffb4a4","on-background":"#1e1b16","on-tertiary":"#ffffff","on-secondary-fixed":"#271900"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"screen-edge-padding":"1.25rem","space-xs":"0.5rem","space-2xs":"0.25rem","space-3xl":"2rem","space-4xl":"2.5rem","card-padding-compact":"1rem","space-2xl":"1.75rem","space-xl":"1.5rem","space-lg":"1.25rem","button-touch-target":"3rem","space-sm":"0.75rem","card-padding-comfortable":"1.5rem","space-md":"1rem"},"fontFamily":{"body-md":["Plus Jakarta Sans"],"display-word":["Epilogue"],"label-lg":["Plus Jakarta Sans"],"display-word-lg":["Epilogue"],"label-sm":["Plus Jakarta Sans"],"headline-sm":["Epilogue"],"headline-md":["Epilogue"],"phonetic":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"headline-lg":["Epilogue"],"body-sm":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"display-word-mobile":["Epilogue"]},"fontSize":{"body-md":["15px",{"lineHeight":"23px","fontWeight":"400"}],"display-word":["38px",{"lineHeight":"46px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"display-word-lg":["44px",{"lineHeight":"52px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","fontWeight":"500"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"phonetic":["15px",{"lineHeight":"20px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-lg":["26px",{"lineHeight":"34px","letterSpacing":"-0.01em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"19px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-word-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.015em","fontWeight":"700"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary-light-tint"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(125,117,106,0.04)] pt-safe"><div class="h-16 px-screen-edge-padding flex items-center justify-between"><div class="flex items-center gap-space-xs"><img alt="淇澳背单词 Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UUS1rZIelvsuUtVOgGOMBWJlnMi0Y_5OAz9-VY9btXHCKf-fvlCGEe4T3Va43OnTMw6M2GAEe_v7C6PCqo6t4emtzmzQwfJSFNLX73SUY7EV77R3hEduBMiv9Cfa8tAdoFgWbVTTae-c1l-aDGRvte2ynTUbqeuRVbJ9rl0T1UrMzWjJPcacRrATAL-fTV3ong-Dha8CJp5c5hyn1v9NpKAY6LqLlM0xscVnfXsNWEWnwJGA16SKXDSQ"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">淇澳背单词</span><span class="font-label-sm text-label-sm text-text-secondary leading-none mt-1">Library</span></div></div><div class="flex items-center gap-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 px-screen-edge-padding bg-surface"><div class="flex flex-col w-full">
+<!-- Interactive Toast Notification Component -->
+<div class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform -translate-y-12 opacity-0 pointer-events-none transition-all duration-300 ease-out flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-inverse-surface text-inverse-on-surface shadow-xl" id="toastNotification">
+<span class="material-symbols-outlined text-primary-fixed text-[20px]" id="toastIcon">check_circle</span>
+<span class="font-label-md text-label-md" id="toastMessage">已完成操作</span>
+</div>
+<!-- Header Section with Stats & Direct Primary Action -->
+<section class="flex flex-col w-full mb-space-lg">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex flex-col min-w-0">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">我的词库</h1>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1 flex items-center gap-1.5">
+<span class="inline-block w-2 h-2 rounded-full bg-primary"></span>
+          共 12 个批次 · 3,450 个独立词汇
+        </p>
+</div>
+<!-- Quick Capsule CTA: Import Batch -->
+<button class="flex-shrink-0 flex items-center gap-1.5 h-11 px-space-md rounded-full bg-primary text-on-primary shadow-md hover:opacity-95 active:scale-95 transition-all" id="btnOpenImportModal" type="button">
+<span class="material-symbols-outlined text-[20px] font-semibold">add</span>
+<span class="font-label-lg text-label-lg font-semibold">导入新批次</span>
+</button>
+</div>
+<!-- Quick Search / Filter Bar -->
+<div class="mt-space-md flex items-center justify-between gap-space-xs p-1.5 rounded-full bg-surface-container-low shadow-sm">
+<div class="flex items-center gap-2 pl-3 flex-1 min-w-0">
+<span class="material-symbols-outlined text-text-muted text-[20px]">search</span>
+<input class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-text-muted focus:outline-none" id="searchInput" placeholder="搜索批次名称或词表..." type="text"/>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+</section>
+<!-- Batch List (Folder Card Aesthetic with Muted Macaron Tints) -->
+<section class="flex flex-col w-full gap-space-md" id="batchContainer">
+<!-- Card 1: Muted Soft Violet / Lilac -->
+<article class="group relative flex flex-col w-full p-space-md rounded-[22px] bg-[#F7F2FA] text-on-surface shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-batch-id="1">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-2xl bg-tag-verb-bg flex items-center justify-center flex-shrink-0 text-tag-verb-text shadow-sm">
+<span class="material-symbols-outlined text-[26px]">folder_special</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="batch-title font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">高考核心高频词汇</h2>
+<span class="px-2 py-0.5 rounded-full bg-[#EFE3F2] text-tag-verb-text font-label-sm text-label-sm flex-shrink-0">高频</span>
+</div>
+<div class="flex items-center gap-2 mt-1 text-text-secondary font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">300 词</span>
+<span class="text-outline-variant">•</span>
+<span>导入于 09-06</span>
+</div>
+</div>
+</div>
+<!-- Quick Icon Actions -->
+<div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+<button class="btn-rename w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-on-surface hover:bg-surface-container/60 active:scale-90 transition-all" title="重命名" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="btn-delete w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-error hover:bg-danger-soft active:scale-90 transition-all" title="删除批次" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<!-- Subtle Progress Strip -->
+<div class="mt-space-sm pt-space-xs flex items-center justify-between">
+<div class="w-full bg-surface-container-highest/60 h-1.5 rounded-full overflow-hidden mr-3">
+<div class="bg-primary h-full rounded-full w-4/5"></div>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary whitespace-nowrap">已掌握 80%</span>
+</div>
+</article>
+<!-- Card 2: Muted Soft Peach / Warm Orange -->
+<article class="group relative flex flex-col w-full p-space-md rounded-[22px] bg-[#FFF2EB] text-on-surface shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-batch-id="2">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-2xl bg-danger-soft flex items-center justify-center flex-shrink-0 text-tertiary shadow-sm">
+<span class="material-symbols-outlined text-[26px]">folder_open</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="batch-title font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">高二必修三 Unit 1-4</h2>
+<!-- In-progress testing badge -->
+<span class="px-2.5 py-0.5 rounded-full bg-accent-gold-soft text-secondary font-label-sm text-label-sm flex-shrink-0 flex items-center gap-1 font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                测试中
+              </span>
+</div>
+<div class="flex items-center gap-2 mt-1 text-text-secondary font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">180 词</span>
+<span class="text-outline-variant">•</span>
+<span>导入于 09-05</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+<button class="btn-rename w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-on-surface hover:bg-surface-container/60 active:scale-90 transition-all" title="重命名" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="btn-delete w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-error hover:bg-danger-soft active:scale-90 transition-all" title="删除批次" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between">
+<div class="w-full bg-surface-container-highest/60 h-1.5 rounded-full overflow-hidden mr-3">
+<div class="bg-secondary h-full rounded-full w-2/5"></div>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary whitespace-nowrap">进行至 40%</span>
+</div>
+</article>
+<!-- Card 3: Muted Soft Sage / Green -->
+<article class="group relative flex flex-col w-full p-space-md rounded-[22px] bg-[#EFF6F2] text-on-surface shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-batch-id="3">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-2xl bg-tag-adj-bg flex items-center justify-center flex-shrink-0 text-tag-adj-text shadow-sm">
+<span class="material-symbols-outlined text-[26px]">folder_copy</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="batch-title font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">易混淆形近词专练</h2>
+</div>
+<div class="flex items-center gap-2 mt-1 text-text-secondary font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">120 词</span>
+<span class="text-outline-variant">•</span>
+<span>导入于 08-28</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+<button class="btn-rename w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-on-surface hover:bg-surface-container/60 active:scale-90 transition-all" title="重命名" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="btn-delete w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-error hover:bg-danger-soft active:scale-90 transition-all" title="删除批次" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between">
+<div class="w-full bg-surface-container-highest/60 h-1.5 rounded-full overflow-hidden mr-3">
+<div class="bg-primary h-full rounded-full w-1/5"></div>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary whitespace-nowrap">已掌握 20%</span>
+</div>
+</article>
+<!-- Card 4: Soft Muted Wheat / Sand Gold -->
+<article class="group relative flex flex-col w-full p-space-md rounded-[22px] bg-[#FCF7ED] text-on-surface shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-batch-id="4">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-2xl bg-accent-gold-soft flex items-center justify-center flex-shrink-0 text-secondary shadow-sm">
+<span class="material-symbols-outlined text-[26px]">library_books</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="batch-title font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">牛津 3000 晨读精选</h2>
+</div>
+<div class="flex items-center gap-2 mt-1 text-text-secondary font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">500 词</span>
+<span class="text-outline-variant">•</span>
+<span>导入于 08-20</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+<button class="btn-rename w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-on-surface hover:bg-surface-container/60 active:scale-90 transition-all" title="重命名" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="btn-delete w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-error hover:bg-danger-soft active:scale-90 transition-all" title="删除批次" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between">
+<div class="w-full bg-surface-container-highest/60 h-1.5 rounded-full overflow-hidden mr-3">
+<div class="bg-secondary-fixed-dim h-full rounded-full w-3/5"></div>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary whitespace-nowrap">已掌握 60%</span>
+</div>
+</article>
+<!-- Card 5: Soft Slate / Cloud Blue -->
+<article class="group relative flex flex-col w-full p-space-md rounded-[22px] bg-[#F1F5F9] text-on-surface shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden" data-batch-id="5">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-2xl bg-tag-noun-bg flex items-center justify-center flex-shrink-0 text-tag-noun-text shadow-sm">
+<span class="material-symbols-outlined text-[26px]">history_edu</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="batch-title font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">历年真题阅读重难点</h2>
+</div>
+<div class="flex items-center gap-2 mt-1 text-text-secondary font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">420 词</span>
+<span class="text-outline-variant">•</span>
+<span>导入于 08-15</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+<button class="btn-rename w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-on-surface hover:bg-surface-container/60 active:scale-90 transition-all" title="重命名" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="btn-delete w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-error hover:bg-danger-soft active:scale-90 transition-all" title="删除批次" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between">
+<div class="w-full bg-surface-container-highest/60 h-1.5 rounded-full overflow-hidden mr-3">
+<div class="bg-tag-noun-text h-full rounded-full w-11/12"></div>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary whitespace-nowrap">已掌握 92%</span>
+</div>
+</article>
+</section>
+<!-- Rename Dialog Modal -->
+<div class="fixed inset-0 z-50 flex items-center justify-center px-screen-edge-padding bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" id="renameModal">
+<div class="w-full max-w-sm rounded-[24px] bg-surface-card p-space-lg shadow-2xl transform scale-95 transition-transform duration-200">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">重命名批次</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mb-space-md">为该词表设定一个易于辨识的分类名称</p>
+<div class="relative w-full mb-space-lg">
+<input class="w-full h-12 px-space-md rounded-xl bg-surface-card-subtle text-on-surface font-body-md text-body-md focus:outline-none focus:bg-surface-container-lowest focus:shadow-sm" id="renameInput" placeholder="请输入新名称..." type="text"/>
+</div>
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md h-11 rounded-full font-label-lg text-label-lg text-text-secondary hover:bg-surface-container transition-colors" id="btnCancelRename" type="button">取消</button>
+<button class="px-space-md h-11 rounded-full bg-primary text-on-primary font-label-lg text-label-lg shadow-sm hover:opacity-95 transition-all" id="btnSaveRename" type="button">保存</button>
+</div>
+</div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="fixed inset-0 z-50 flex items-center justify-center px-screen-edge-padding bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" id="deleteModal">
+<div class="w-full max-w-sm rounded-[24px] bg-surface-card p-space-lg shadow-2xl transform scale-95 transition-transform duration-200">
+<div class="w-12 h-12 rounded-full bg-error-container text-on-error-container flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[24px]">delete_forever</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">确认删除批次？</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mb-space-lg">删除后，该批次及关联的学习进度将彻底移出词库，该操作不可撤回。</p>
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md h-11 rounded-full font-label-lg text-label-lg text-text-secondary hover:bg-surface-container transition-colors" id="btnCancelDelete" type="button">保留</button>
+<button class="px-space-md h-11 rounded-full bg-error text-on-error font-label-lg text-label-lg shadow-sm hover:opacity-95 transition-all" id="btnConfirmDelete" type="button">确认删除</button>
+</div>
+</div>
+</div>
+<!-- Import New Batch Modal (With Line Numbers Guide per PRD 3.1) -->
+<div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" id="importModal">
+<div class="w-full max-w-md rounded-t-[28px] sm:rounded-[28px] bg-surface-card p-space-lg shadow-2xl transform translate-y-8 sm:translate-y-0 sm:scale-95 transition-transform duration-200 max-h-[795px] flex flex-col">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">导入新批次</h3>
+<p class="font-label-sm text-label-sm text-text-secondary mt-0.5">支持纯文本/换行粘贴，自动解析中英文</p>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:bg-surface-container" id="btnCloseImportModal" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Batch Name Input -->
+<div class="mb-space-sm">
+<label class="block font-label-sm text-label-sm text-text-secondary mb-1">批次名称</label>
+<input class="w-full h-11 px-space-md rounded-xl bg-surface-card-subtle text-on-surface font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest" id="newBatchNameInput" placeholder="例如：考研必背词汇 List 01" type="text"/>
+</div>
+<!-- 12-Line Preview Code Editor Style -->
+<div class="mb-space-md flex-1 flex flex-col min-h-0">
+<div class="flex items-center justify-between mb-1">
+<label class="font-label-sm text-label-sm text-text-secondary">单词列表 (每行一条，格式: 英文 / 中文)</label>
+<span class="font-label-sm text-label-sm text-primary">已识别: <span id="parsedWordCount">0</span> 词</span>
+</div>
+<div class="flex rounded-xl bg-surface-card-subtle p-2.5 h-48 overflow-hidden">
+<!-- Line Numbers -->
+<div class="w-8 select-none text-right pr-2 text-text-muted font-body-sm text-body-sm leading-6 flex flex-col">
+<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+</div>
+<!-- Textarea -->
+<textarea class="flex-1 bg-transparent text-on-surface font-body-sm text-body-sm leading-6 resize-none focus:outline-none overflow-y-auto" id="importWordTextarea" placeholder="abandon / v. 放弃，抛弃
+abundant / adj. 丰富的，充裕的
+candidate / n. 候选人，应试者
+deliberate / adj. 深思熟虑的"></textarea>
+</div>
+</div>
+<!-- Import Action Buttons -->
+<div class="flex items-center justify-between pt-space-xs">
+<button class="flex items-center gap-1 font-label-md text-label-md text-primary hover:underline" id="btnPasteClipboard" type="button">
+<span class="material-symbols-outlined text-[16px]">content_paste</span>
+          快捷粘贴示例
+        </button>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-md h-11 rounded-full font-label-lg text-label-lg text-text-secondary hover:bg-surface-container transition-colors" id="btnCancelImport" type="button">取消</button>
+<button class="px-space-lg h-11 rounded-full bg-primary text-on-primary font-label-lg text-label-lg shadow-sm hover:opacity-95 transition-all" id="btnSubmitImport" type="button">确认导入</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // State references
+    let currentTargetCard = null;
+
+    // Toast helper
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    function showToast(message, icon = 'check_circle') {
+      toastMsg.textContent = message;
+      toastIcon.textContent = icon;
+      toast.classList.remove('opacity-0', '-translate-y-12', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-12', 'pointer-events-none');
+      }, 2400);
+    }
+
+    // Highlighting Bottom Nav Tab "词库"
+    const navItems = document.querySelectorAll('nav a');
+    navItems.forEach(item => {
+      const pill = item.querySelector('.nav-pill');
+      const icon = item.querySelector('.nav-icon');
+      const label = item.querySelector('span:last-child');
+      
+      if (item.getAttribute('data-path') === 'library') {
+        item.classList.add('text-primary-container', 'font-semibold');
+        item.classList.remove('text-text-secondary');
+        if (pill) {
+          pill.classList.add('bg-primary-light-tint', 'text-primary-container');
+        }
+        if (icon) {
+          icon.style.fontVariationSettings = "'FILL' 1";
+        }
+        if (label) {
+          label.classList.add('font-semibold', 'text-primary-container');
+        }
+      } else {
+        item.classList.remove('text-primary-container', 'font-semibold');
+        item.classList.add('text-text-secondary');
+        if (pill) {
+          pill.classList.remove('bg-primary-light-tint', 'text-primary-container');
+        }
+        if (icon) {
+          icon.style.fontVariationSettings = "'FILL' 0";
+        }
+        if (label) {
+          label.classList.remove('font-semibold', 'text-primary-container');
+        }
+      }
+    });
+
+    // Modals references
+    const renameModal = document.getElementById('renameModal');
+    const renameInput = document.getElementById('renameInput');
+    const btnCancelRename = document.getElementById('btnCancelRename');
+    const btnSaveRename = document.getElementById('btnSaveRename');
+
+    const deleteModal = document.getElementById('deleteModal');
+    const btnCancelDelete = document.getElementById('btnCancelDelete');
+    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+
+    const importModal = document.getElementById('importModal');
+    const btnOpenImportModal = document.getElementById('btnOpenImportModal');
+    const btnCloseImportModal = document.getElementById('btnCloseImportModal');
+    const btnCancelImport = document.getElementById('btnCancelImport');
+    const btnSubmitImport = document.getElementById('btnSubmitImport');
+    const btnPasteClipboard = document.getElementById('btnPasteClipboard');
+    const importWordTextarea = document.getElementById('importWordTextarea');
+    const newBatchNameInput = document.getElementById('newBatchNameInput');
+    const parsedWordCount = document.getElementById('parsedWordCount');
+
+    // Rename Flow
+    document.querySelectorAll('.btn-rename').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentTargetCard = btn.closest('article');
+        const titleEl = currentTargetCard.querySelector('.batch-title');
+        renameInput.value = titleEl ? titleEl.textContent.trim() : '';
+        openModal(renameModal);
+        setTimeout(() => renameInput.focus(), 150);
+      });
+    });
+
+    btnCancelRename.addEventListener('click', () => closeModal(renameModal));
+
+    btnSaveRename.addEventListener('click', () => {
+      if (currentTargetCard && renameInput.value.trim()) {
+        const titleEl = currentTargetCard.querySelector('.batch-title');
+        if (titleEl) {
+          titleEl.textContent = renameInput.value.trim();
+        }
+        closeModal(renameModal);
+        showToast('批次名称修改成功');
+      }
+    });
+
+    // Delete Flow
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentTargetCard = btn.closest('article');
+        openModal(deleteModal);
+      });
+    });
+
+    btnCancelDelete.addEventListener('click', () => closeModal(deleteModal));
+
+    btnConfirmDelete.addEventListener('click', () => {
+      if (currentTargetCard) {
+        currentTargetCard.style.transition = 'all 0.3s ease';
+        currentTargetCard.style.opacity = '0';
+        currentTargetCard.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          currentTargetCard.remove();
+          closeModal(deleteModal);
+          showToast('批次已成功移出', 'delete');
+        }, 250);
+      }
+    });
+
+    // Whole Card Click -> Navigate to Batch Detail
+    document.querySelectorAll('#batchContainer article').forEach(card => {
+      card.addEventListener('click', () => {
+        const title = card.querySelector('.batch-title').textContent.trim();
+        showToast('进入：' + title, 'menu_book');
+      });
+    });
+
+    // Import Flow
+    btnOpenImportModal.addEventListener('click', () => {
+      openModal(importModal);
+    });
+
+    btnCloseImportModal.addEventListener('click', () => closeModal(importModal));
+    btnCancelImport.addEventListener('click', () => closeModal(importModal));
+
+    importWordTextarea.addEventListener('input', () => {
+      const lines = importWordTextarea.value.split('\n').filter(line => line.trim().length > 0);
+      parsedWordCount.textContent = lines.length;
+    });
+
+    btnPasteClipboard.addEventListener('click', () => {
+      newBatchNameInput.value = '雅思核心拓展高分段';
+      importWordTextarea.value = 
+`paradigm / n. 范例，典范
+resilient / adj. 有韧性的，能复原的
+scrutinize / v. 仔细审查
+ubiquitous / adj. 无处不在的
+pragmatic / adj. 务实的，注重实际的
+coherent / adj. 连贯的，条理清晰的`;
+      parsedWordCount.textContent = '6';
+    });
+
+    btnSubmitImport.addEventListener('click', () => {
+      const name = newBatchNameInput.value.trim() || '未命名批次';
+      const wordsCount = importWordTextarea.value.split('\n').filter(l => l.trim().length > 0).length || 1;
+      
+      closeModal(importModal);
+      showToast(`已成功导入批次「${name}」(${wordsCount}词)`);
+      
+      // Reset form
+      newBatchNameInput.value = '';
+      importWordTextarea.value = '';
+      parsedWordCount.textContent = '0';
+    });
+
+    // Search input filter
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('#batchContainer article');
+      cards.forEach(card => {
+        const title = card.querySelector('.batch-title').textContent.toLowerCase();
+        if (title.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+
+    // Modal helpers
+    function openModal(modal) {
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100');
+      const inner = modal.querySelector('div');
+      if (inner) {
+        inner.classList.remove('scale-95', 'translate-y-8');
+        inner.classList.add('scale-100', 'translate-y-0');
+      }
+    }
+
+    function closeModal(modal) {
+      modal.classList.remove('opacity-100');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      const inner = modal.querySelector('div');
+      if (inner) {
+        inner.classList.remove('scale-100', 'translate-y-0');
+        inner.classList.add('scale-95');
+      }
+    }
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-card/95 backdrop-blur-xl shadow-[0_-6px_24px_rgba(41,38,33,0.06)]" data-active-classes="text-primary-container font-semibold [&amp;_.nav-pill]:bg-primary-light-tint [&amp;_.nav-pill]:text-primary-container [&amp;_.nav-icon]:font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] text-text-secondary transition-colors" data-path="today" href="#"><div class="nav-pill px-3 py-1 rounded-full flex items-center justify-center transition-all"><span class="material-symbols-outlined nav-icon text-[22px]">wb_sunny</span></div><span class="font-label-sm text-label-sm mt-0.5">今日</span></a><a aria-current="page" class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors text-primary-container font-semibold [&amp;_.nav-pill]:bg-primary-light-tint [&amp;_.nav-pill]:text-primary-container [&amp;_.nav-icon]:font-semibold" data-path="library" href="#"><div class="nav-pill px-3 py-1 rounded-full flex items-center justify-center transition-all"><span class="material-symbols-outlined nav-icon text-[22px]">menu_book</span></div><span class="font-label-sm text-label-sm mt-0.5">词库</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] text-text-secondary transition-colors relative" data-path="wrong-words" href="#"><div class="nav-pill px-3 py-1 rounded-full flex items-center justify-center transition-all relative"><span class="material-symbols-outlined nav-icon text-[22px]">bookmark_added</span><span class="absolute top-1 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface-card"></span></div><span class="font-label-sm text-label-sm mt-0.5">错词</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] text-text-secondary transition-colors" data-path="profile" href="#"><div class="nav-pill px-3 py-1 rounded-full flex items-center justify-center transition-all"><span class="material-symbols-outlined nav-icon text-[22px]">manage_accounts</span></div><span class="font-label-sm text-label-sm mt-0.5">我的</span></a></div></nav></body></html>

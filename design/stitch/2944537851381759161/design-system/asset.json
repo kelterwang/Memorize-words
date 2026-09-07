@@ -1,0 +1,194 @@
+{
+  "designSystem": {
+    "displayName": "Morning Warmth Study",
+    "styleGuidelines": "## Brand & Style\n\nThe design system is crafted for calm, focused, morning language acquisition. It balances the tactile tangibility of high-grade book paper with modern mobile ergonomics. The visual tone is warm, deliberate, and encouraging, devoid of aggressive gamification banners or high-stress alert motifs.\n\n### Design Philosophy\n- **Tactile Paper Quality**: Backgrounds evoke creamy morning vellum (`#FFF9F1`), and foreground surfaces rest on immaculate paper white (`#FFFDF9`) and soft oatmeal tones (`#FBF7F0`).\n- **Quiet Academic Temperament**: Sage greens (`#54715A`), warm muted wheat accents (`#E7B75D`), and terracotta corals (`#B95F4B`) create natural focal points without screen fatigue.\n- **Typographic Precision**: Vocabulary words stand proud with oversized display geometry, flanked by structured IPA pronunciation, pastel part-of-speech badges, and focused sentence highlights.\n- **Organic Soft Geometry**: High continuous radii (20–28px on study cards, fully rounded pills on buttons and status tags) provide a soft, welcoming, and tactile hand feel.\n\n## Layout & Spacing\n\nThe system is optimized for single-handed mobile navigation (standard 390dp viewport baseline). \n\n### Layout Model\n- **Container Structure**: Single-column vertical stack with a locked `screen-edge-padding` of 20dp (`1.25rem`), preserving breathability across card borders.\n- **Vertical Spacing Rhythm**:\n  - Related atomic elements (word title to phonetic transcription): `0.5rem` (`space-xs`).\n  - Content groups inside study cards: `1.25rem` (`space-lg`).\n  - Section-to-section separations: `1.75rem` (`space-2xl`).\n  - Bottom action dock clearance: Safe area inset + `4.5rem` to avoid thumb collision with navigation bars.\n- **Device Constraints**: For screens narrower than 360dp, metric columns stack into balanced 2x2 grids, and batch action buttons convert from full horizontal label rows into compact icon-label pairs.\n\n## Elevation & Depth\n\nThis system avoids dark, stark synthetic dropshadows. Depth is manifested through warm tinted ambient occlusion and subtle tone boundaries that mimic sheets of cream cotton paper resting on a desktop.\n\n### Elevation Hierarchy\n- **Level 0 (Canvas Base)**: Pure `#FFF9F1` background without shadow or outline.\n- **Level 1 (Default Sheet & Inset List Cards)**: Background `#FFFDF9`, border `1px solid rgba(220, 210, 195, 0.45)`, soft ambient shadow: `0 4px 16px rgba(125, 117, 106, 0.05)`.\n- **Level 2 (Active Learning Focus Card)**: Background `#FFFDF9`, border `1px solid rgba(231, 183, 93, 0.25)`, elevated ambient glow: `0 10px 30px rgba(84, 113, 90, 0.08)`.\n- **Level 3 (Floating Action Docks & Dialogs)**: Background `#FFFDF9` with backdrop blur, shadow: `0 12px 36px rgba(41, 38, 33, 0.12)`.\n\n## Components\n\n### 1. Flashcard Word Card\n- **Container**: Elevated Level 2 paper surface (`#FFFDF9`), rounded corners at `24px`, internal padding `24px`.\n- **Word Header**: Centered `display-word` text (`#292621`), accompanied by the phonetic transcription in `text-secondary` and a circular audio speaker icon button (44×44dp touch area, `#F3EBDD` background).\n- **Badge Bar**: Inline horizontal stack of part-of-speech chips:\n  - Adjective (`adj`): Background `#E2ECE9`, Text `#3D6B5E`.\n  - Noun (`n`): Background `#E1EBF5`, Text `#3A6389`.\n  - Verb (`v` / `vt`): Background `#EFE3F2`, Text `#754382`.\n- **Content Reveal Area**: Hidden during initial recall in Student Mode; reveals with a clean vertical cross-fade upon tap:\n  - English definition and Chinese gloss in `body-md`.\n  - Contextual example sentence with the keyword styled in semibold `#D32F2F`.\n\n### 2. Action Controls & Learning Responses\n- **Dual Decision Bottom Dock**:\n  - \"不会\" (Incorrect / Missed): Pill button, height `54dp`, background `#F7E4DE`, label `#B95F4B` (`label-lg`), with subtle tactile active state.\n  - \"会\" (Understood / Prompt): Pill button, height `54dp`, background `#54715A`, label `#FFFDF9` (`label-lg`).\n- **Answer Verification Phase**:\n  - \"我错了\" (I Was Wrong): Pill button, background `#F7E4DE`, label `#B95F4B`.\n  - \"我对了\" (I Was Right): Pill button, background `#54715A`, label `#FFFDF9`.\n  - Optional tertiary link: \"会 (移出错词库)\" set in sage green with a checkmark outline.\n\n### 3. Review Round Circular Progress Indicator\n- Concentric segmented arc or circular gauge:\n  - Unfilled track: `#F3EBDD`, thickness `8px`.\n  - Completed arc: Gradient or flat stroke of `#E7B75D` (Warm Gold).\n  - Center metadata stack: \"Round 1\" in `label-sm` (`text-muted`), large count \"300 / 3637\" in `headline-lg` (`#292621`).\n\n### 4. Batch & Category Cards (Library & Wrong Book)\n- Rounded container (`20px`), background `#FFFDF9`, border `1px solid rgba(220, 210, 195, 0.45)`.\n- Left-side folder accent: Subtle warm tab tint (`#DDE8DA` for master lists, `#F7E4DE` for review folders).\n- Title in `headline-sm`, subtitle showing word count and date in `body-sm` (`#7D756A`).\n- Trailing quick actions: Edit and Delete buttons separated by at least `12dp` to prevent touch collisions.\n\n### 5. Input Fields (Import & Rename)\n- Background `#FBF7F0`, border `1.5px solid rgba(125, 117, 106, 0.2)`, rounded `16px`.\n- Focused state: Border `#54715A`, outline `3px solid #DDE8DA`.\n- Multi-line editor carries line-number guides on the left in `#A8A096` to support the 12-line preview requirements.",
+    "theme": {
+      "bodyFont": "PLUS_JAKARTA_SANS",
+      "bodyFontFamily": "Plus Jakarta Sans",
+      "colorMode": "LIGHT",
+      "colorVariant": "FIDELITY",
+      "customColor": "#54715a",
+      "designMd": "---\nname: Morning Warmth Study\ncolors:\n  surface: '#fff8f2'\n  surface-dim: '#e0d9d1'\n  surface-bright: '#fff8f2'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#faf2ea'\n  surface-container: '#f4ede5'\n  surface-container-high: '#eee7df'\n  surface-container-highest: '#e9e1d9'\n  on-surface: '#1e1b16'\n  on-surface-variant: '#424842'\n  inverse-surface: '#33302b'\n  inverse-on-surface: '#f7f0e7'\n  outline: '#737972'\n  outline-variant: '#c2c8c0'\n  surface-tint: '#48654f'\n  primary: '#3c5843'\n  on-primary: '#ffffff'\n  primary-container: '#54715a'\n  on-primary-container: '#d3f4d7'\n  inverse-primary: '#afceb3'\n  secondary: '#7c5800'\n  on-secondary: '#ffffff'\n  secondary-container: '#ffcd70'\n  on-secondary-container: '#785500'\n  tertiary: '#883a29'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#a7513e'\n  on-tertiary-container: '#ffe6e1'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#caebce'\n  primary-fixed-dim: '#afceb3'\n  on-primary-fixed: '#05210f'\n  on-primary-fixed-variant: '#314d38'\n  secondary-fixed: '#ffdea7'\n  secondary-fixed-dim: '#f0bf64'\n  on-secondary-fixed: '#271900'\n  on-secondary-fixed-variant: '#5e4200'\n  tertiary-fixed: '#ffdad3'\n  tertiary-fixed-dim: '#ffb4a4'\n  on-tertiary-fixed: '#3d0600'\n  on-tertiary-fixed-variant: '#7a2f1f'\n  background: '#fff8f2'\n  on-background: '#1e1b16'\n  surface-variant: '#e9e1d9'\n  surface-canvas: '#FFF9F1'\n  surface-card: '#FFFDF9'\n  surface-card-subtle: '#FBF7F0'\n  primary-deep: '#3E5442'\n  primary-light-tint: '#DDE8DA'\n  accent-warm-sand: '#F3EBDD'\n  accent-gold-soft: '#FAF0DC'\n  danger-soft: '#F7E4DE'\n  highlight-target-word: '#D32F2F'\n  text-secondary: '#7D756A'\n  text-muted: '#A8A096'\n  tag-adj-bg: '#E2ECE9'\n  tag-adj-text: '#3D6B5E'\n  tag-noun-bg: '#E1EBF5'\n  tag-noun-text: '#3A6389'\n  tag-verb-bg: '#EFE3F2'\n  tag-verb-text: '#754382'\ntypography:\n  display-word:\n    fontFamily: Epilogue\n    fontSize: 38px\n    fontWeight: '700'\n    lineHeight: 46px\n    letterSpacing: -0.02em\n  display-word-lg:\n    fontFamily: Epilogue\n    fontSize: 44px\n    fontWeight: '700'\n    lineHeight: 52px\n    letterSpacing: -0.02em\n  display-word-mobile:\n    fontFamily: Epilogue\n    fontSize: 32px\n    fontWeight: '700'\n    lineHeight: 40px\n    letterSpacing: -0.015em\n  headline-lg:\n    fontFamily: Epilogue\n    fontSize: 26px\n    fontWeight: '700'\n    lineHeight: 34px\n    letterSpacing: -0.01em\n  headline-md:\n    fontFamily: Epilogue\n    fontSize: 20px\n    fontWeight: '600'\n    lineHeight: 28px\n  headline-sm:\n    fontFamily: Epilogue\n    fontSize: 18px\n    fontWeight: '600'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 26px\n  body-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 15px\n    fontWeight: '400'\n    lineHeight: 23px\n  body-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 13px\n    fontWeight: '400'\n    lineHeight: 19px\n  label-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 14px\n    fontWeight: '600'\n    lineHeight: 20px\n    letterSpacing: 0.01em\n  label-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 12px\n    fontWeight: '600'\n    lineHeight: 16px\n    letterSpacing: 0.02em\n  label-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 11px\n    fontWeight: '500'\n    lineHeight: 14px\n  phonetic:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 15px\n    fontWeight: '400'\n    lineHeight: 20px\nrounded:\n  sm: 0.25rem\n  DEFAULT: 0.5rem\n  md: 0.75rem\n  lg: 1rem\n  xl: 1.5rem\n  full: 9999px\nspacing:\n  space-2xs: 0.25rem\n  space-xs: 0.5rem\n  space-sm: 0.75rem\n  space-md: 1rem\n  space-lg: 1.25rem\n  space-xl: 1.5rem\n  space-2xl: 1.75rem\n  space-3xl: 2rem\n  space-4xl: 2.5rem\n  screen-edge-padding: 1.25rem\n  card-padding-comfortable: 1.5rem\n  card-padding-compact: 1rem\n  button-touch-target: 3rem\n---\n\n## Brand & Style\n\nThe design system is crafted for calm, focused, morning language acquisition. It balances the tactile tangibility of high-grade book paper with modern mobile ergonomics. The visual tone is warm, deliberate, and encouraging, devoid of aggressive gamification banners or high-stress alert motifs.\n\n### Design Philosophy\n- **Tactile Paper Quality**: Backgrounds evoke creamy morning vellum (`#FFF9F1`), and foreground surfaces rest on immaculate paper white (`#FFFDF9`) and soft oatmeal tones (`#FBF7F0`).\n- **Quiet Academic Temperament**: Sage greens (`#54715A`), warm muted wheat accents (`#E7B75D`), and terracotta corals (`#B95F4B`) create natural focal points without screen fatigue.\n- **Typographic Precision**: Vocabulary words stand proud with oversized display geometry, flanked by structured IPA pronunciation, pastel part-of-speech badges, and focused sentence highlights.\n- **Organic Soft Geometry**: High continuous radii (20–28px on study cards, fully rounded pills on buttons and status tags) provide a soft, welcoming, and tactile hand feel.\n\n## Colors\n\nThe color palette establishes a tranquil dawn study ritual.\n\n### Roles & Rationale\n- **Canvas & Surfaces**: The base canvas (`#FFF9F1`) eliminates glaring blue-white light. Elevated study cards use `#FFFDF9` to mimic unblemished vellum, with grouped container lists set in `#FBF7F0`.\n- **Primary Sage (`#54715A`) & Deep Green (`#3E5442`)**: Conveys calm mastery, steady progress, and positive confirmation. Used for primary CTA buttons, active radio indicators, and mastery tallies.\n- **Secondary Wheat Gold (`#E7B75D`)**: Used for review round progress rings, milestone stars, and subtle accomplishment badges. Paired with soft straw backgrounds (`#FAF0DC`).\n- **Coral Terracotta (`#B95F4B`)**: Serves as the empathetic error indicator. It signifies needed practice without punishing psychological anxiety. Supported by light coral background pills (`#F7E4DE`).\n- **Typographic Brown-Black (`#292621`)**: Softened organic ink black that preserves sharp legibility without harsh synthetic contrast against cream surfaces.\n- **Target Word Red (`#D32F2F`)**: Reserved strictly for contextual example sentences to isolate target vocabulary roots and inflections.\n\n## Typography\n\nThe type scale combines **Epilogue** for display headlines and main vocabulary targets with **Plus Jakarta Sans** for clear, humanist interface typography, body descriptions, and sentence breakdowns.\n\n### Hierarchy & Style Rules\n- **Vocabulary Presentation (`display-word`)**: Prominent weight and tight tracking command the user's immediate attention. When the large-font accessibility setting is engaged in the PRD, step up to `display-word-lg`. Long compound phrases dynamically scale to `display-word-mobile`.\n- **IPA Phonetics (`phonetic`)**: Standardized with brackets (e.g. `[sə'bɔːdɪnət]`) in `text-secondary` (`#7D756A`).\n- **Example Sentences**: Set in `body-md` with relaxed line-height (1.55) to support effortless reading. The targeted term within the sentence must use `highlight-target-word` (`#D32F2F`) in semibold weight.\n\n## Layout & Spacing\n\nThe system is optimized for single-handed mobile navigation (standard 390dp viewport baseline). \n\n### Layout Model\n- **Container Structure**: Single-column vertical stack with a locked `screen-edge-padding` of 20dp (`1.25rem`), preserving breathability across card borders.\n- **Vertical Spacing Rhythm**:\n  - Related atomic elements (word title to phonetic transcription): `0.5rem` (`space-xs`).\n  - Content groups inside study cards: `1.25rem` (`space-lg`).\n  - Section-to-section separations: `1.75rem` (`space-2xl`).\n  - Bottom action dock clearance: Safe area inset + `4.5rem` to avoid thumb collision with navigation bars.\n- **Device Constraints**: For screens narrower than 360dp, metric columns stack into balanced 2x2 grids, and batch action buttons convert from full horizontal label rows into compact icon-label pairs.\n\n## Elevation & Depth\n\nThis system avoids dark, stark synthetic dropshadows. Depth is manifested through warm tinted ambient occlusion and subtle tone boundaries that mimic sheets of cream cotton paper resting on a desktop.\n\n### Elevation Hierarchy\n- **Level 0 (Canvas Base)**: Pure `#FFF9F1` background without shadow or outline.\n- **Level 1 (Default Sheet & Inset List Cards)**: Background `#FFFDF9`, border `1px solid rgba(220, 210, 195, 0.45)`, soft ambient shadow: `0 4px 16px rgba(125, 117, 106, 0.05)`.\n- **Level 2 (Active Learning Focus Card)**: Background `#FFFDF9`, border `1px solid rgba(231, 183, 93, 0.25)`, elevated ambient glow: `0 10px 30px rgba(84, 113, 90, 0.08)`.\n- **Level 3 (Floating Action Docks & Dialogs)**: Background `#FFFDF9` with backdrop blur, shadow: `0 12px 36px rgba(41, 38, 33, 0.12)`.\n\n## Shapes\n\nThe geometric signature is generous, soft, and rounded.\n\n### Shape Scales\n- **Study Containers & Flashcards**: `24px` (`1.5rem`) to `28px` (`1.75rem`) smooth squircle corners, creating a welcoming, book-like presence.\n- **Action Buttons & Inputs**: Fully rounded pill forms (`9999px` / `button-touch-target`) for primary decision points (e.g. \"会 / 不会\", \"开始晨测\").\n- **Tags, Badges & Chips**: `12px` to `16px` pill corners to encapsulate part-of-speech identifiers and session status indicators cleanly.\n\n## Components\n\n### 1. Flashcard Word Card\n- **Container**: Elevated Level 2 paper surface (`#FFFDF9`), rounded corners at `24px`, internal padding `24px`.\n- **Word Header**: Centered `display-word` text (`#292621`), accompanied by the phonetic transcription in `text-secondary` and a circular audio speaker icon button (44×44dp touch area, `#F3EBDD` background).\n- **Badge Bar**: Inline horizontal stack of part-of-speech chips:\n  - Adjective (`adj`): Background `#E2ECE9`, Text `#3D6B5E`.\n  - Noun (`n`): Background `#E1EBF5`, Text `#3A6389`.\n  - Verb (`v` / `vt`): Background `#EFE3F2`, Text `#754382`.\n- **Content Reveal Area**: Hidden during initial recall in Student Mode; reveals with a clean vertical cross-fade upon tap:\n  - English definition and Chinese gloss in `body-md`.\n  - Contextual example sentence with the keyword styled in semibold `#D32F2F`.\n\n### 2. Action Controls & Learning Responses\n- **Dual Decision Bottom Dock**:\n  - \"不会\" (Incorrect / Missed): Pill button, height `54dp`, background `#F7E4DE`, label `#B95F4B` (`label-lg`), with subtle tactile active state.\n  - \"会\" (Understood / Prompt): Pill button, height `54dp`, background `#54715A`, label `#FFFDF9` (`label-lg`).\n- **Answer Verification Phase**:\n  - \"我错了\" (I Was Wrong): Pill button, background `#F7E4DE`, label `#B95F4B`.\n  - \"我对了\" (I Was Right): Pill button, background `#54715A`, label `#FFFDF9`.\n  - Optional tertiary link: \"会 (移出错词库)\" set in sage green with a checkmark outline.\n\n### 3. Review Round Circular Progress Indicator\n- Concentric segmented arc or circular gauge:\n  - Unfilled track: `#F3EBDD`, thickness `8px`.\n  - Completed arc: Gradient or flat stroke of `#E7B75D` (Warm Gold).\n  - Center metadata stack: \"Round 1\" in `label-sm` (`text-muted`), large count \"300 / 3637\" in `headline-lg` (`#292621`).\n\n### 4. Batch & Category Cards (Library & Wrong Book)\n- Rounded container (`20px`), background `#FFFDF9`, border `1px solid rgba(220, 210, 195, 0.45)`.\n- Left-side folder accent: Subtle warm tab tint (`#DDE8DA` for master lists, `#F7E4DE` for review folders).\n- Title in `headline-sm`, subtitle showing word count and date in `body-sm` (`#7D756A`).\n- Trailing quick actions: Edit and Delete buttons separated by at least `12dp` to prevent touch collisions.\n\n### 5. Input Fields (Import & Rename)\n- Background `#FBF7F0`, border `1.5px solid rgba(125, 117, 106, 0.2)`, rounded `16px`.\n- Focused state: Border `#54715A`, outline `3px solid #DDE8DA`.\n- Multi-line editor carries line-number guides on the left in `#A8A096` to support the 12-line preview requirements.",
+      "font": "EPILOGUE",
+      "headlineFont": "EPILOGUE",
+      "headlineFontFamily": "Epilogue",
+      "labelFont": "PLUS_JAKARTA_SANS",
+      "labelFontFamily": "Plus Jakarta Sans",
+      "namedColors": {
+        "accent-gold-soft": "#FAF0DC",
+        "accent-warm-sand": "#F3EBDD",
+        "background": "#fff8f2",
+        "danger-soft": "#F7E4DE",
+        "error": "#ba1a1a",
+        "error_container": "#ffdad6",
+        "highlight-target-word": "#D32F2F",
+        "inverse_on_surface": "#f7f0e7",
+        "inverse_primary": "#afceb3",
+        "inverse_surface": "#33302b",
+        "on_background": "#1e1b16",
+        "on_error": "#ffffff",
+        "on_error_container": "#93000a",
+        "on_primary": "#ffffff",
+        "on_primary_container": "#d3f4d7",
+        "on_primary_fixed": "#05210f",
+        "on_primary_fixed_variant": "#314d38",
+        "on_secondary": "#ffffff",
+        "on_secondary_container": "#785500",
+        "on_secondary_fixed": "#271900",
+        "on_secondary_fixed_variant": "#5e4200",
+        "on_surface": "#1e1b16",
+        "on_surface_variant": "#424842",
+        "on_tertiary": "#ffffff",
+        "on_tertiary_container": "#ffe6e1",
+        "on_tertiary_fixed": "#3d0600",
+        "on_tertiary_fixed_variant": "#7a2f1f",
+        "outline": "#737972",
+        "outline_variant": "#c2c8c0",
+        "primary": "#3c5843",
+        "primary-deep": "#3E5442",
+        "primary-light-tint": "#DDE8DA",
+        "primary_container": "#54715a",
+        "primary_fixed": "#caebce",
+        "primary_fixed_dim": "#afceb3",
+        "secondary": "#7c5800",
+        "secondary_container": "#ffcd70",
+        "secondary_fixed": "#ffdea7",
+        "secondary_fixed_dim": "#f0bf64",
+        "surface": "#fff8f2",
+        "surface-canvas": "#FFF9F1",
+        "surface-card": "#FFFDF9",
+        "surface-card-subtle": "#FBF7F0",
+        "surface_bright": "#fff8f2",
+        "surface_container": "#f4ede5",
+        "surface_container_high": "#eee7df",
+        "surface_container_highest": "#e9e1d9",
+        "surface_container_low": "#faf2ea",
+        "surface_container_lowest": "#ffffff",
+        "surface_dim": "#e0d9d1",
+        "surface_tint": "#48654f",
+        "surface_variant": "#e9e1d9",
+        "tag-adj-bg": "#E2ECE9",
+        "tag-adj-text": "#3D6B5E",
+        "tag-noun-bg": "#E1EBF5",
+        "tag-noun-text": "#3A6389",
+        "tag-verb-bg": "#EFE3F2",
+        "tag-verb-text": "#754382",
+        "tertiary": "#883a29",
+        "tertiary_container": "#a7513e",
+        "tertiary_fixed": "#ffdad3",
+        "tertiary_fixed_dim": "#ffb4a4",
+        "text-muted": "#A8A096",
+        "text-secondary": "#7D756A"
+      },
+      "overrideNeutralColor": "#292621",
+      "overridePrimaryColor": "#54715a",
+      "overrideSecondaryColor": "#e7b75d",
+      "overrideTertiaryColor": "#b95f4b",
+      "roundness": "ROUND_EIGHT",
+      "spacing": {
+        "button-touch-target": "3rem",
+        "card-padding-comfortable": "1.5rem",
+        "card-padding-compact": "1rem",
+        "screen-edge-padding": "1.25rem",
+        "space-2xl": "1.75rem",
+        "space-2xs": "0.25rem",
+        "space-3xl": "2rem",
+        "space-4xl": "2.5rem",
+        "space-lg": "1.25rem",
+        "space-md": "1rem",
+        "space-sm": "0.75rem",
+        "space-xl": "1.5rem",
+        "space-xs": "0.5rem"
+      },
+      "spacingScale": 2,
+      "typography": {
+        "body-lg": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "lineHeight": "26px"
+        },
+        "body-md": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "lineHeight": "23px"
+        },
+        "body-sm": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "13px",
+          "fontWeight": "400",
+          "lineHeight": "19px"
+        },
+        "display-word": {
+          "fontFamily": "Epilogue",
+          "fontSize": "38px",
+          "fontWeight": "700",
+          "letterSpacing": "-0.02em",
+          "lineHeight": "46px"
+        },
+        "display-word-lg": {
+          "fontFamily": "Epilogue",
+          "fontSize": "44px",
+          "fontWeight": "700",
+          "letterSpacing": "-0.02em",
+          "lineHeight": "52px"
+        },
+        "display-word-mobile": {
+          "fontFamily": "Epilogue",
+          "fontSize": "32px",
+          "fontWeight": "700",
+          "letterSpacing": "-0.015em",
+          "lineHeight": "40px"
+        },
+        "headline-lg": {
+          "fontFamily": "Epilogue",
+          "fontSize": "26px",
+          "fontWeight": "700",
+          "letterSpacing": "-0.01em",
+          "lineHeight": "34px"
+        },
+        "headline-md": {
+          "fontFamily": "Epilogue",
+          "fontSize": "20px",
+          "fontWeight": "600",
+          "lineHeight": "28px"
+        },
+        "headline-sm": {
+          "fontFamily": "Epilogue",
+          "fontSize": "18px",
+          "fontWeight": "600",
+          "lineHeight": "24px"
+        },
+        "label-lg": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "14px",
+          "fontWeight": "600",
+          "letterSpacing": "0.01em",
+          "lineHeight": "20px"
+        },
+        "label-md": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "12px",
+          "fontWeight": "600",
+          "letterSpacing": "0.02em",
+          "lineHeight": "16px"
+        },
+        "label-sm": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "lineHeight": "14px"
+        },
+        "phonetic": {
+          "fontFamily": "Plus Jakarta Sans",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "lineHeight": "20px"
+        }
+      }
+    }
+  },
+  "name": "assets/d98615e2e02e40a9a35d93176532464c",
+  "version": "1"
+}
