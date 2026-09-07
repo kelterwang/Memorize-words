@@ -33,7 +33,7 @@ def render_config(original, key=None):
     block += 'enabled = ' + ('true' if key else 'false') + '\n'
     block += 'startup_timeout_sec = 30\ntool_timeout_sec = 300\n'
     if key:
-        if not re.fullmatch(r'[A-Za-z0-9_-]+', key):
+        if not re.fullmatch(r'[A-Za-z0-9_.-]+', key):
             raise ValueError('密钥格式不正确，请只粘贴 API Key 本身。')
         block += 'http_headers = { "X-Goog-Api-Key" = ' + json.dumps(key) + ' }\n'
     block += END

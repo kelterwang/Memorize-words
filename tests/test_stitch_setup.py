@@ -31,6 +31,11 @@ class StitchSetupTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             setup.render_config('', 'bad\nkey')
 
+    def test_accepts_dotted_stitch_key(self):
+        key = 'AQ.example_test-key.123'
+        data = setup.tomllib.loads(setup.render_config('', key))
+        self.assertEqual(data['mcp_servers']['stitch']['http_headers']['X-Goog-Api-Key'], key)
+
     def test_private_backup_and_config(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config.toml'
