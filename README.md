@@ -4,6 +4,12 @@
 
 面向高中生的离线 Android 单词晨测 App。产品严格以仓库中的 `设计文档.md` 与 `技术方案文档.md` 为实现基线。
 
+## 安卓安装包
+
+[下载 v1.1.0 测试版 APK](https://github.com/kelterwang/Memorize-words/releases/download/v1.1.0/MorningWords-1.1.0.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.1.0)
+
+使用与 v1.0.0 相同的签名，可直接覆盖安装并保留学习数据。
+
 ## Stitch 界面更新
 
 界面按 `design/stitch/2944537851381759161/` 中的原型重制：首页、词库、学生测试隐藏/核对态与本轮统计采用品牌顶栏、纸白圆角卡片和柔和配色。词库支持名称搜索与删除确认，测试提供放弃确认，结算展示真实正确率与本轮错词。原型中的示例数字、未支持的功能和难度星级未写入业务界面。

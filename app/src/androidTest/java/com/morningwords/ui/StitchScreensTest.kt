@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
+import com.morningwords.BuildConfig
 import com.morningwords.MorningWordsApplication
 import com.morningwords.data.repository.SessionView
 import com.morningwords.domain.model.*
@@ -36,6 +37,15 @@ class StitchScreensTest {
         compose.waitForIdle()
         val file = File(app.getExternalFilesDir(null), name)
         file.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    @Test fun settingsShowsInstalledVersion() {
+        lateinit var vm: AppViewModel
+        compose.runOnIdle { vm = ViewModelProvider(store, ViewModelProvider.AndroidViewModelFactory(app))[AppViewModel::class.java] }
+        compose.setContent { MorningWordsApp(vm) }
+        compose.onNodeWithText("我的").performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("淇澳背单词 · V${BuildConfig.VERSION_NAME}"))
+        compose.onNodeWithText("淇澳背单词 · V${BuildConfig.VERSION_NAME}").assertIsDisplayed()
     }
 
     @Test fun librarySearchAndDeleteConfirmationUseRealData() {

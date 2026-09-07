@@ -45,6 +45,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.morningwords.BuildConfig
 import com.morningwords.data.entity.WrongWordRow
 import com.morningwords.data.repository.SessionView
 import com.morningwords.domain.importer.ImportPreview
@@ -900,7 +901,7 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
                 Row(Modifier.padding(16.dp)) { Icon(Icons.Outlined.CloudOff, null, tint = Sage); Text("所有单词和学习记录只保存在本机，核心功能无需联网。", modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodySmall) }
             }
         }
-        item { Text("淇澳背单词 · V1.0", modifier = Modifier.fillMaxWidth().padding(18.dp), textAlign = TextAlign.Center, color = Ink.copy(.38f), style = MaterialTheme.typography.labelMedium) }
+        item { Text("淇澳背单词 · V${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth().padding(18.dp), textAlign = TextAlign.Center, color = Ink.copy(.38f), style = MaterialTheme.typography.labelMedium) }
     }
 }
 
