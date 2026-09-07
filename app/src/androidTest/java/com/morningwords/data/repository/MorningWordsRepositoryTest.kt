@@ -54,6 +54,20 @@ class MorningWordsRepositoryTest {
         assertEquals(setOf("look", "look forward to", "look after", "look into"), database.dao().sessionWords(sessionId).map { it.word.word }.toSet())
     }
 
+    @Test fun summaryWordsOnlyContainErrorsFromTheCurrentRound() = runTest {
+        val batch = repository.importBatch("统计", "apple 苹果\nbanana 香蕉")
+        val id = (repository.createDailySession(listOf(batch), TestMode.STUDENT) as CreateSessionResult.Created).sessionId
+        repository.answer(id, TestResult.UNKNOWN)
+        val summary = repository.answer(id, TestResult.KNOW)
+        assertEquals(listOf("apple"), summary.roundWrongWords)
+        assertEquals(1, summary.roundWrongCount)
+        repository.retryWrongAnswers(id)
+        assertTrue(repository.loadSession(id)!!.roundWrongWords.isEmpty())
+        val nextSummary = repository.answer(id, TestResult.KNOW)
+        assertTrue(nextSummary.roundWrongWords.isEmpty())
+        assertEquals(0, nextSummary.roundWrongCount)
+    }
+
     private suspend fun legacyBatch(name: String, wordId: Long, raw: String): Long {
         val batch = database.dao().insertBatch(WordBatchEntity(batchName = name, createdAt = now++))
         database.dao().insertBatchWord(BatchWordEntity(batchId = batch, wordId = wordId, requiredMeaning = "旧释义", sortOrder = 0, rawText = raw))

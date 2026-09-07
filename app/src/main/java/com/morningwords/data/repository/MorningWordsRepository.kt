@@ -23,6 +23,7 @@ data class SessionView(
     val roundTestedCount: Int,
     val roundKnownCount: Int,
     val roundWrongCount: Int,
+    val roundWrongWords: List<String> = emptyList(),
 )
 
 sealed interface CreateSessionResult {
@@ -258,6 +259,7 @@ class MorningWordsRepository(
             roundTestedCount = answeredThisRound.size,
             roundKnownCount = answeredThisRound.count { it.sessionWord.lastResult != TestResult.UNKNOWN },
             roundWrongCount = answeredThisRound.count { it.sessionWord.lastResult == TestResult.UNKNOWN },
+            roundWrongWords = answeredThisRound.filter { it.sessionWord.lastResult == TestResult.UNKNOWN }.map { it.word.word },
         )
     }
 

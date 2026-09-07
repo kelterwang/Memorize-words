@@ -62,8 +62,8 @@ class VocabularyLayoutTest {
         for (line in 0 until result.lineCount) {
             assertEquals(result.size.width / 2f, (result.getLineLeft(line) + result.getLineRight(line)) / 2f, 2f)
         }
-        compose.onNodeWithText(example).assertIsDisplayed()
-        compose.onNodeWithContentDescription("发音").performClick()
+        compose.onNodeWithText(example).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("发音").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(spoken) }
         val folder = InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null)!!
         File(folder, "long-phrase-card.png").outputStream().use {

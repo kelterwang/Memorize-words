@@ -9,3 +9,4 @@ captures/
 .local-runtime/
 backups/
 安装包/
+.kotlin/

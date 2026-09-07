@@ -6,6 +6,10 @@ import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,9 +23,13 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -65,7 +73,8 @@ fun MorningWordsApp(viewModel: AppViewModel) {
     MaterialTheme(
         colorScheme = lightColorScheme(
             primary = Sage, onPrimary = Color.White, primaryContainer = SageSoft,
-            secondary = Coral, background = Cream, surface = Paper, onSurface = Ink,
+            secondary = Coral, onSecondary = Color.White, secondaryContainer = SageSoft, onSecondaryContainer = StitchDeep,
+            onPrimaryContainer = StitchDeep, background = Cream, onBackground = Ink, surface = Paper, onSurface = Ink,
             error = Color(0xFFB3261E), outline = Color(0xFFD1C8BA),
         ),
         typography = Typography(
@@ -78,7 +87,7 @@ fun MorningWordsApp(viewModel: AppViewModel) {
         val rootRoutes = setOf("home", "library", "wrong", "settings")
         Scaffold(
             containerColor = Cream,
-            snackbarHost = { SnackbarHost(snackbar) },
+            snackbarHost = { SnackbarHost(snackbar, modifier = if (route == "test/{sessionId}") Modifier.padding(bottom = 160.dp) else Modifier) },
             bottomBar = { if (route in rootRoutes) AppBottomBar(nav, route ?: "home") },
         ) { padding ->
             NavHost(nav, startDestination = "home", modifier = Modifier.padding(padding)) {
@@ -128,7 +137,7 @@ private fun AppBottomBar(nav: NavHostController, current: String) {
                 onClick = { nav.navigate(route) { popUpTo("home"); launchSingleTop = true } },
                 icon = { Icon(icon, label) },
                 label = { Text(label) },
-                colors = NavigationBarItemDefaults.colors(indicatorColor = SageSoft),
+                colors = NavigationBarItemDefaults.colors(indicatorColor = SageSoft, selectedIconColor = Sage, selectedTextColor = Sage, unselectedIconColor = StitchMuted, unselectedTextColor = StitchMuted),
             )
         }
     }
@@ -136,69 +145,96 @@ private fun AppBottomBar(nav: NavHostController, current: String) {
 
 @Composable
 private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
-    LaunchedEffect(Unit) { vm.refreshHomeMessage() }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 22.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        item {
-            Text(state.greeting, style = MaterialTheme.typography.labelLarge, color = Sage)
-            Text(state.dailyQuote, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 8.dp))
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("词库", state.dashboard.wordCount.toString(), Modifier.weight(1f))
-                StatTile("批次", state.dashboard.batchCount.toString(), Modifier.weight(1f))
-                StatTile("待复习", state.dashboard.wrongCount.toString(), Modifier.weight(1f), Coral)
-            }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(28.dp), color = Sage, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(Icons.Outlined.AutoStories, null, tint = Gold, modifier = Modifier.size(34.dp))
-                    Text(
-                        if (state.activeSessionId != null) "你有一场晨测\n正在进行" else if (state.dashboard.wordCount == 0) "还没有单词" else "准备好了吗？",
-                        color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        if (state.activeSessionId != null) "进度已经自动保存，随时接着答。" else if (state.dashboard.wordCount == 0) "先导入老师要求背诵的单词。" else "选择昨天的批次，开始今天的检验。",
-                        color = Color.White.copy(alpha = .78f),
-                    )
-                    Button(
-                        onClick = {
-                            state.activeSessionId?.let { nav.navigate("test/$it") }
-                                ?: if (state.dashboard.wordCount == 0) nav.navigate("import") else nav.navigate("setup")
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Paper, contentColor = Ink),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(if (state.activeSessionId != null) "继续晨测" else if (state.dashboard.wordCount == 0) "导入单词" else "开始测试", modifier = Modifier.padding(6.dp)) }
+    LaunchedEffect(Unit) { vm.refreshHomeMessage(); vm.refreshActive() }
+    Column(Modifier.fillMaxSize()) {
+        BrandHeader("Today", onProfile = { nav.navigate("settings") })
+        LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.WbSunny, null, tint = Gold)
+                    Text(state.greeting, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                    FilledTonalButton(onClick = { nav.navigate("import") }) { Icon(Icons.Outlined.Add, null, Modifier.size(16.dp)); Text("导入新词") }
                 }
             }
-        }
-        item {
-            SectionTitle("测试节奏", "离线保存 · 每题即时记录")
-            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StepChip("01", "全部测试")
-                StepChip("02", "轮次统计")
-                StepChip("03", "按需复测")
+            item {
+                PaperPanel {
+                    Text("DAILY INSPIRATION", style = MaterialTheme.typography.labelMedium, color = StitchMuted, letterSpacing = 1.5.sp)
+                    Text(state.dailyQuote, fontSize = 30.sp, lineHeight = 42.sp, fontWeight = FontWeight.Bold)
+                    Text("晨光里的每一次积累，都让记忆更牢。", color = StitchMuted, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatTile("词库总词数", state.dashboard.wordCount.toString(), Modifier.weight(1f))
+                    StatTile("学习批次", state.dashboard.batchCount.toString(), Modifier.weight(1f))
+                    StatTile("待复习错词", state.dashboard.wrongCount.toString(), Modifier.weight(1f), Coral)
+                }
+            }
+            item {
+                PaperPanel {
+                    StudyChip(if (state.activeSessionId != null) "进行中的测试" else "每日单词练习")
+                    Text(if (state.activeSessionId != null) "接着上次的进度，继续回想" else if (state.dashboard.wordCount == 0) "建立你的第一份词库" else "准备好，检验今天的记忆", style = MaterialTheme.typography.titleLarge)
+                    Surface(shape = RoundedCornerShape(18.dp), color = StitchSand.copy(alpha = .45f)) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.AutoStories, null, tint = Sage, modifier = Modifier.size(30.dp))
+                            Column(Modifier.padding(start = 12.dp)) {
+                                Text("今日核心词汇自测", fontWeight = FontWeight.SemiBold)
+                                Text(if (state.activeSessionId != null) "每题即时保存，随时接着答" else "选择学习批次，专注一次回忆", color = StitchMuted, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    Button(onClick = {
+                        state.activeSessionId?.let { nav.navigate("test/$it") }
+                            ?: if (state.dashboard.wordCount == 0) nav.navigate("import") else nav.navigate("setup")
+                    }, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), colors = ButtonDefaults.buttonColors(containerColor = StitchDeep)) {
+                        Icon(Icons.Outlined.PlayArrow, null); Spacer(Modifier.width(8.dp))
+                        Text(if (state.activeSessionId != null) "继续晨测" else if (state.dashboard.wordCount == 0) "导入单词" else "开始测试", fontWeight = FontWeight.Bold)
+                    }
+                    Text("学生自测 · 家长考我 · 两种方式共享学习记录", color = StitchMuted, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            item {
+                PaperPanel {
+                    SectionTitle("测试节奏", "三步循环，按需巩固")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StepChip("1", "全部测试")
+                        StepChip("2", "轮次统计")
+                        StepChip("3", "按需复测")
+                    }
+                    Text("每一轮都可以选择完成，错词留待下次继续巩固。", color = StitchMuted, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            item {
+                OutlinedCard(onClick = { nav.navigate("import") }, shape = RoundedCornerShape(24.dp), border = BorderStroke(1.dp, StitchSand), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.FileUpload, null, tint = Sage)
+                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                            Text("批量导入自定义单词", fontWeight = FontWeight.Bold)
+                            Text("支持粘贴单词、释义与例句", color = StitchMuted, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, null)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable private fun StatTile(label: String, value: String, modifier: Modifier, accent: Color = Sage) {
-    Surface(modifier = modifier, shape = RoundedCornerShape(20.dp), color = Paper) {
-        Column(Modifier.padding(16.dp)) {
-            Text(value, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = accent)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = Ink.copy(alpha = .58f))
+    Surface(modifier = modifier, shape = RoundedCornerShape(24.dp), color = if (accent == Coral) StitchDangerSoft else Paper) {
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, color = if (accent == Coral) Coral else StitchMuted, fontSize = 11.sp, textAlign = TextAlign.Center)
+            Text(value, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, color = if (accent == Coral) Coral else Ink)
         }
     }
 }
 
 @Composable private fun RowScope.StepChip(number: String, label: String) {
-    Surface(shape = RoundedCornerShape(18.dp), color = Paper, modifier = Modifier.weight(1f)) {
-        Column(Modifier.padding(12.dp)) { Text(number, color = Gold, fontWeight = FontWeight.Bold); Text(label, style = MaterialTheme.typography.labelMedium) }
+    Surface(shape = RoundedCornerShape(16.dp), color = StitchSand.copy(alpha = .45f), modifier = Modifier.weight(1f)) {
+        Column(Modifier.padding(horizontal = 6.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            StudyChip(number, Sage, SageSoft)
+            Text(label, modifier = Modifier.padding(top = 10.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 
@@ -228,32 +264,55 @@ private fun LibraryScreen(state: AppUiState, vm: AppViewModel, nav: NavHostContr
             dismissButton = { TextButton(onClick = { editingBatch = null }) { Text("取消") } },
         )
     }
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        PageHeader("词库", "按老师布置的内容分批管理")
-        Button(onClick = { nav.navigate("import") }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp)); Text("导入新批次")
-        }
-        Spacer(Modifier.height(14.dp))
-        if (state.batches.isEmpty()) EmptyState(Icons.AutoMirrored.Outlined.MenuBook, "还没有批次", "从一行一个单词开始吧。")
-        else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(state.batches, key = { it.id }) { batch ->
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Paper,
-                    modifier = Modifier.fillMaxWidth().clickable { nav.navigate("batch/${batch.id}") },
-                ) {
-                    Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = RoundedCornerShape(14.dp), color = SageSoft) {
-                            Icon(Icons.Outlined.Folder, null, tint = Sage, modifier = Modifier.padding(12.dp))
+    var query by rememberSaveable { mutableStateOf("") }
+    var deletingBatch by remember { mutableStateOf<com.morningwords.domain.model.BatchSummary?>(null) }
+    deletingBatch?.let { batch ->
+        AlertDialog(onDismissRequest = { deletingBatch = null }, title = { Text("删除词库？") },
+            text = { Text("删除“${batch.name}”后，它将不再参与测试。历史记录仍保留。") },
+            confirmButton = { TextButton(onClick = { vm.deleteBatch(batch.id); deletingBatch = null }, enabled = !state.isBusy) { Text("删除", color = Coral) } },
+            dismissButton = { TextButton(onClick = { deletingBatch = null }) { Text("取消") } })
+    }
+    val visibleBatches = state.batches.filter { it.name.contains(query.trim(), ignoreCase = true) }
+    Column(Modifier.fillMaxSize()) {
+        BrandHeader("Library", onProfile = { nav.navigate("settings") })
+        LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item {
+                Text("我的词库", style = MaterialTheme.typography.headlineLarge)
+                Text("共 ${state.dashboard.batchCount} 个批次 · ${state.dashboard.wordCount} 个独立词汇", color = StitchMuted, modifier = Modifier.padding(top = 6.dp))
+                Button(onClick = { nav.navigate("import") }, modifier = Modifier.fillMaxWidth().padding(top = 16.dp).heightIn(min = 52.dp), colors = ButtonDefaults.buttonColors(containerColor = StitchDeep)) {
+                    Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp)); Text("导入新批次")
+                }
+            }
+            item {
+                OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("搜索批次名称") }, singleLine = true, shape = RoundedCornerShape(28.dp),
+                    leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                    trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Close, "清空搜索") } })
+            }
+            if (state.batches.isEmpty()) item { EmptyState(Icons.AutoMirrored.Outlined.MenuBook, "还没有批次", "从一行一个单词开始吧。") }
+            else if (visibleBatches.isEmpty()) item { EmptyState(Icons.Outlined.SearchOff, "没有匹配的词库", "换个名称试试，或清空搜索。") }
+            itemsIndexed(visibleBatches, key = { _, batch -> batch.id }) { index, batch ->
+                val backgrounds = listOf(Color(0xFFF7F1FA), Color(0xFFFFF1EB), Color(0xFFEEF6F2), Color(0xFFFBF6EA), Color(0xFFEEF3FA))
+                Surface(shape = RoundedCornerShape(26.dp), color = backgrounds[index % backgrounds.size],
+                    modifier = Modifier.fillMaxWidth().clickable { nav.navigate("batch/${batch.id}") }) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(18.dp), color = Paper.copy(alpha = .7f)) {
+                                Icon(Icons.Outlined.FolderOpen, null, tint = Sage, modifier = Modifier.padding(14.dp).size(28.dp))
+                            }
+                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                Text(batch.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text("${batch.wordCount} 词", color = Ink, modifier = Modifier.padding(top = 4.dp))
+                            }
                         }
-                        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                            Text(batch.name, fontWeight = FontWeight.SemiBold)
-                            Text("${batch.wordCount} 个单词", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = .55f))
-                            Text("导入时间 ${formatImportTime(batch.createdAt)}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = .45f))
+                        Text("导入时间 ${formatImportTime(batch.createdAt)}", color = StitchMuted, style = MaterialTheme.typography.bodySmall)
+                        HorizontalDivider(color = Paper)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("查看词库详情", color = Sage, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { editingBatch = batch; editedName = batch.name }) { Icon(Icons.Outlined.Edit, "修改名称") }
+                            IconButton(onClick = { deletingBatch = batch }) { Icon(Icons.Outlined.DeleteOutline, "删除") }
+                            Icon(Icons.Outlined.ChevronRight, null, tint = StitchMuted)
                         }
-                        IconButton(onClick = { editingBatch = batch; editedName = batch.name }) { Icon(Icons.Outlined.Edit, "修改名称") }
-                        IconButton(onClick = { vm.deleteBatch(batch.id) }) { Icon(Icons.Outlined.DeleteOutline, "删除") }
-                        Icon(Icons.Outlined.ChevronRight, "查看词库详情", tint = Ink.copy(alpha = .45f))
                     }
                 }
             }
@@ -486,46 +545,60 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
     LaunchedEffect(speechError) {
         speechError?.let { vm.showMessage(it); speechError = null }
     }
-    Column(Modifier.fillMaxSize().padding(20.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.abandon { nav.navigate("home") { popUpTo("home") { inclusive = true } } } }) { Icon(Icons.Outlined.Close, "放弃") }
-            Column(Modifier.weight(1f)) {
-                Text(phaseLabel(session.session.phase), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, color = Sage)
-                LinearProgressIndicator(progress = { session.roundTestedCount.toFloat() / session.roundTotalCount.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+    var confirmAbandon by remember { mutableStateOf(false) }
+    if (confirmAbandon) {
+        AlertDialog(onDismissRequest = { confirmAbandon = false }, title = { Text("放弃本次测试？") },
+            text = { Text("已产生的学习记录会保留。若只是暂时离开，请返回首页，之后可以继续晨测。") },
+            confirmButton = { TextButton(onClick = { confirmAbandon = false; vm.abandon { nav.navigate("home") { popUpTo("home") { inclusive = true } } } }, enabled = !state.isBusy) { Text("放弃测试", color = Coral) } },
+            dismissButton = { TextButton(onClick = { confirmAbandon = false }) { Text("继续作答") } })
+    }
+    Column(Modifier.fillMaxSize()) {
+        BrandHeader("Learning Session", onBack = { nav.popBackStack() })
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("第 ${session.roundTestedCount + 1} / ${session.roundTotalCount} 词", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("${phaseLabel(session.session.phase)} · Round ${session.session.roundNumber + 1}", color = StitchMuted, style = MaterialTheme.typography.labelSmall)
+                }
+                IconButton(onClick = { confirmAbandon = true }, enabled = !state.isBusy) { Icon(Icons.Outlined.Close, "放弃", tint = StitchMuted) }
             }
-            Text("${session.roundTestedCount}/${session.roundTotalCount}", style = MaterialTheme.typography.labelLarge)
-        }
-        Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            LiveStat("已测", session.roundTestedCount, Ink)
-            LiveStat("会", session.roundKnownCount, Sage)
-            LiveStat("不会", session.roundWrongCount, Coral)
-        }
-        Spacer(Modifier.height(16.dp))
-        AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
-            StudyWordCard(animatedCard, answerShown, state.settings.largeFont, ttsReady, ::speak)
-        }
-        Spacer(Modifier.height(16.dp))
-        if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(
-                    onClick = { vm.confirmSelfAssessment(false) },
-                    enabled = !state.isBusy,
-                    modifier = Modifier.weight(1f),
-                ) { Text("我错了", modifier = Modifier.padding(7.dp), color = Coral) }
-                Button(
-                    onClick = { vm.confirmSelfAssessment(true) },
-                    enabled = !state.isBusy,
-                    modifier = Modifier.weight(1f),
-                ) { Text("我对了", modifier = Modifier.padding(7.dp)) }
+            LinearProgressIndicator(progress = { session.roundTestedCount.toFloat() / session.roundTotalCount.coerceAtLeast(1) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(6.dp), trackColor = StitchSand, strokeCap = StrokeCap.Round)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                LiveStat("已测", session.roundTestedCount, StitchMuted)
+                LiveStat("会", session.roundKnownCount, Sage)
+                LiveStat("不会", session.roundWrongCount, Coral)
             }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = { vm.answer(TestResult.UNKNOWN) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("不会", modifier = Modifier.padding(7.dp), color = Coral) }
-                Button(onClick = { vm.answer(TestResult.KNOW) }, enabled = !state.isBusy, modifier = Modifier.weight(1f)) { Text("会", modifier = Modifier.padding(7.dp)) }
+            Spacer(Modifier.height(16.dp))
+            AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
+                StudyWordCard(animatedCard, answerShown, state.settings.largeFont, ttsReady, ::speak)
             }
-        }
-        if (session.session.type == SessionType.WRONG_REVIEW && answerShown) {
-            TextButton(onClick = { vm.answer(TestResult.MASTERED) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("会（移出错词库）") }
+            Column(Modifier.heightIn(max = 210.dp).verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = { vm.confirmSelfAssessment(false) }, enabled = !state.isBusy,
+                            colors = ButtonDefaults.buttonColors(containerColor = StitchDangerSoft, contentColor = Coral),
+                            modifier = Modifier.weight(1f).heightIn(min = 54.dp)) { Text("我错了", fontWeight = FontWeight.Bold) }
+                        Button(onClick = { vm.confirmSelfAssessment(true) }, enabled = !state.isBusy,
+                            colors = ButtonDefaults.buttonColors(containerColor = StitchDeep),
+                            modifier = Modifier.weight(1f).heightIn(min = 54.dp)) { Text("我对了", fontWeight = FontWeight.Bold) }
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = { vm.answer(TestResult.UNKNOWN) }, enabled = !state.isBusy,
+                            colors = ButtonDefaults.buttonColors(containerColor = StitchDangerSoft, contentColor = Coral),
+                            modifier = Modifier.weight(1f).heightIn(min = 54.dp)) { Text("不会", fontWeight = FontWeight.Bold) }
+                        Button(onClick = { vm.answer(TestResult.KNOW) }, enabled = !state.isBusy,
+                            colors = ButtonDefaults.buttonColors(containerColor = StitchDeep),
+                            modifier = Modifier.weight(1f).heightIn(min = 54.dp)) { Text("会", fontWeight = FontWeight.Bold) }
+                    }
+                }
+                if (session.session.type == SessionType.WRONG_REVIEW && answerShown) {
+                    TextButton(onClick = { vm.answer(TestResult.MASTERED) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("会（移出错词库）") }
+                }
+                Text(if (state.isBusy) "正在保存…" else if (!answerShown) "点击「会」展开答案，核对后才记录结果" else "请根据完整释义，如实核对本次记忆",
+                    color = StitchMuted, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }
@@ -537,33 +610,65 @@ private fun LiveStat(label: String, value: Int, color: Color) {
 
 @Composable
 private fun RoundSummaryScreen(session: SessionView, busy: Boolean, vm: AppViewModel, nav: NavHostController) {
-    Column(
-        Modifier.fillMaxSize().padding(28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Surface(shape = RoundedCornerShape(50), color = SageSoft) {
-            Icon(Icons.Outlined.Assessment, null, tint = Sage, modifier = Modifier.padding(18.dp).size(48.dp))
+    Column(Modifier.fillMaxSize()) {
+        BrandHeader("Learning Session", onBack = { nav.popBackStack() })
+        RoundSummaryContent(session, busy, onRetry = vm::retryWrongAnswers,
+            onComplete = { vm.completeToday { nav.navigate("home") { popUpTo("home") { inclusive = true } } } })
+    }
+}
+
+@Composable
+internal fun RoundSummaryContent(session: SessionView, busy: Boolean, onRetry: () -> Unit, onComplete: () -> Unit) {
+    val rate = if (session.roundTestedCount == 0) 0f else session.roundKnownCount.toFloat() / session.roundTestedCount
+    LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        item {
+            StudyChip("晨读记忆闭环", Color(0xFF875F0B), Color(0xFFFAF0DC))
+            Text("Round ${session.session.roundNumber + 1} 测试完成", fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 12.dp))
+            Text("每一次认真回想，都在让记忆更牢。", color = StitchMuted, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         }
-        Text("本轮测试完成", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
-        Text("第 ${session.session.roundNumber + 1} 轮测试统计", color = Ink.copy(alpha = .58f), modifier = Modifier.padding(top = 8.dp))
-        Surface(shape = RoundedCornerShape(24.dp), color = Paper, modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp)) {
-            Row(Modifier.padding(22.dp), horizontalArrangement = Arrangement.SpaceAround) {
-                MiniStat("已测试", session.roundTestedCount)
-                MiniStat("会", session.roundKnownCount)
-                MiniStat("错", session.roundWrongCount)
+        item {
+            PaperPanel {
+                Box(Modifier.fillMaxWidth().heightIn(min = 250.dp).padding(10.dp), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.size(224.dp)) {
+                        val stroke = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
+                        drawArc(SageSoft, -90f, 360f, false, style = stroke)
+                        if (rate > 0f) drawArc(Sage, -90f, 360f * rate, false, style = stroke)
+                        if (rate < 1f) drawArc(Coral, -90f + 360f * rate, 360f * (1f - rate), false, style = stroke)
+                    }
+                    Column(Modifier.widthIn(max = 190.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("本轮已测试", color = StitchMuted, style = MaterialTheme.typography.labelMedium)
+                        Text("${session.roundTestedCount} / ${session.roundTotalCount}", fontSize = 30.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
+                        Text("本轮正确率 ${(rate * 100).toInt()}%", color = Sage, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
             }
         }
-        Button(
-            onClick = vm::retryWrongAnswers,
-            enabled = session.roundWrongCount > 0 && !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (session.roundWrongCount > 0) "错题重新测试（${session.roundWrongCount}）" else "本轮没有错题", modifier = Modifier.padding(7.dp)) }
-        OutlinedButton(
-            onClick = { vm.completeToday { nav.navigate("home") { popUpTo("home") { inclusive = true } } } },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-        ) { Text("退出并完成今日测试", modifier = Modifier.padding(7.dp)) }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile("正确掌握", session.roundKnownCount.toString(), Modifier.weight(1f))
+                StatTile("待攻克错词", session.roundWrongCount.toString(), Modifier.weight(1f), Coral)
+            }
+        }
+        if (session.roundWrongWords.isNotEmpty()) item {
+            PaperPanel {
+                Text("本轮待攻克单词", style = MaterialTheme.typography.titleLarge)
+                Text(session.roundWrongWords.joinToString("  ·  "), fontSize = 18.sp, lineHeight = 30.sp)
+            }
+        }
+        item {
+            Surface(shape = RoundedCornerShape(20.dp), color = StitchSand.copy(alpha = .5f)) {
+                Text("不必强求一次全对。可以继续复测本轮错词，也可以完成测试，稍后再来巩固。", color = StitchMuted, modifier = Modifier.padding(18.dp), lineHeight = 24.sp)
+            }
+        }
+        item {
+            Button(onClick = onRetry, enabled = session.roundWrongCount > 0 && !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = StitchDeep), modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                Text(if (session.roundWrongCount > 0) "错题重新测试（${session.roundWrongCount}）" else "本轮没有错题", fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(onClick = onComplete, enabled = !busy, modifier = Modifier.fillMaxWidth().padding(top = 12.dp).heightIn(min = 54.dp)) {
+                Text("退出并完成今日测试", fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
@@ -811,7 +916,7 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
                 Row(Modifier.padding(16.dp)) { Icon(Icons.Outlined.CloudOff, null, tint = Sage); Text("所有单词和学习记录只保存在本机，核心功能无需联网。", modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodySmall) }
             }
         }
-        item { Text("晨词 · V1.0", modifier = Modifier.fillMaxWidth().padding(18.dp), textAlign = TextAlign.Center, color = Ink.copy(.38f), style = MaterialTheme.typography.labelMedium) }
+        item { Text("淇澳背单词 · V1.0", modifier = Modifier.fillMaxWidth().padding(18.dp), textAlign = TextAlign.Center, color = Ink.copy(.38f), style = MaterialTheme.typography.labelMedium) }
     }
 }
 
