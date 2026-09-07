@@ -49,6 +49,13 @@ class StitchScreensTest {
         compose.runOnIdle { vm = ViewModelProvider(store, ViewModelProvider.AndroidViewModelFactory(app))[AppViewModel::class.java] }
         compose.setContent { MorningWordsApp(vm) }
         compose.waitUntil(5_000) { vm.state.value.batches.size == 3 }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("测试节奏"))
+        compose.onNodeWithText("批量导入自定义单词").assertDoesNotExist()
+        compose.onNodeWithText("支持粘贴单词、释义与例句").assertDoesNotExist()
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+        compose.onNodeWithText("导入新词").performClick()
+        compose.onNodeWithText("确认导入").assertExists()
+        compose.onNodeWithContentDescription("返回").performClick()
         capture("stitch-home.png")
         compose.onNodeWithText("词库").performClick()
         compose.onNodeWithText("我的词库").assertIsDisplayed()
@@ -129,6 +136,7 @@ class StitchScreensTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("本轮没有错题"))
         compose.onNodeWithText("本轮没有错题").assertIsNotEnabled()
         compose.onNodeWithText("退出并完成今日测试").assertIsEnabled()
+        compose.onNodeWithText("不必强求一次全对。", substring = true).assertDoesNotExist()
         compose.onNodeWithText("本轮待攻克单词").assertDoesNotExist()
     }
 }

@@ -8,6 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AndroidProductStructureTest(unittest.TestCase):
+    def test_recall_card_has_no_removed_decorative_head_icon(self) -> None:
+        source = (ROOT / "app/src/main/java/com/morningwords/ui/StudyWordCard.kt").read_text(encoding="utf-8")
+        self.assertNotIn("Psychology", source)
+
     def test_installed_app_name_preserves_application_identity(self) -> None:
         android = "{http://schemas.android.com/apk/res/android}"
         manifest = ET.parse(ROOT / "app/src/main/AndroidManifest.xml").getroot()

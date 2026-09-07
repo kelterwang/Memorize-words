@@ -8,7 +8,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -73,9 +72,6 @@ internal fun StudyWordCard(
                 }
             } else {
                 Spacer(Modifier.height(28.dp))
-                Surface(shape = RoundedCornerShape(50), color = StitchSand.copy(alpha = .7f)) {
-                    Icon(Icons.Outlined.Psychology, null, tint = StitchMuted, modifier = Modifier.padding(15.dp).size(24.dp))
-                }
                 Text("在心中默背释义与拼写\n点击下方按钮检验记忆", color = StitchMuted, textAlign = TextAlign.Center,
                     lineHeight = 26.sp, modifier = Modifier.padding(top = 16.dp))
                 Text("RECALL PHASE", color = StitchMuted, letterSpacing = 2.sp, fontSize = 11.sp, modifier = Modifier.padding(top = 24.dp))

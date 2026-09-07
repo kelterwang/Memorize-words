@@ -204,18 +204,7 @@ private fun HomeScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControll
                     Text("每一轮都可以选择完成，错词留待下次继续巩固。", color = StitchMuted, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            item {
-                OutlinedCard(onClick = { nav.navigate("import") }, shape = RoundedCornerShape(24.dp), border = BorderStroke(1.dp, StitchSand), modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.FileUpload, null, tint = Sage)
-                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                            Text("批量导入自定义单词", fontWeight = FontWeight.Bold)
-                            Text("支持粘贴单词、释义与例句", color = StitchMuted, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Icon(Icons.Outlined.ChevronRight, null)
-                    }
-                }
-            }
+
         }
     }
 }
@@ -653,11 +642,6 @@ internal fun RoundSummaryContent(session: SessionView, busy: Boolean, onRetry: (
             PaperPanel {
                 Text("本轮待攻克单词", style = MaterialTheme.typography.titleLarge)
                 Text(session.roundWrongWords.joinToString("  ·  "), fontSize = 18.sp, lineHeight = 30.sp)
-            }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(20.dp), color = StitchSand.copy(alpha = .5f)) {
-                Text("不必强求一次全对。可以继续复测本轮错词，也可以完成测试，稍后再来巩固。", color = StitchMuted, modifier = Modifier.padding(18.dp), lineHeight = 24.sp)
             }
         }
         item {
