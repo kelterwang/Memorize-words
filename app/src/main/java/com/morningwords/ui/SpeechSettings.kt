@@ -44,14 +44,21 @@ internal fun SpeechSettings(state: AppUiState, vm: AppViewModel) {
             confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("关闭") } })
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importVoicePack) }
-    val player = rememberSpeechPlayer(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled)
+    val pronunciation = rememberPronunciation(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled)
+    val player = pronunciation.player
     SettingsGroup("英文发音 · 1 倍速") {
         SettingsChoice("手机自带发音", state.settings.speechSource == SpeechSource.SYSTEM) { vm.setSpeechSource(SpeechSource.SYSTEM) }
         HorizontalDivider()
         SettingsChoice("Kokoro 离线发音", state.settings.speechSource == SpeechSource.KOKORO) { vm.setSpeechSource(SpeechSource.KOKORO) }
         HorizontalDivider()
-        SettingsChoice("美音 · American English", state.settings.englishAccent == EnglishAccent.US) { vm.setEnglishAccent(EnglishAccent.US) }
-        SettingsChoice("英音 · British English", state.settings.englishAccent == EnglishAccent.UK) { vm.setEnglishAccent(EnglishAccent.UK) }
+        SettingsChoice("美音 · American English", state.settings.englishAccent == EnglishAccent.US) {
+            pronunciation.selectAccent(EnglishAccent.US)
+            vm.setEnglishAccent(EnglishAccent.US)
+        }
+        SettingsChoice("英音 · British English", state.settings.englishAccent == EnglishAccent.UK) {
+            pronunciation.selectAccent(EnglishAccent.UK)
+            vm.setEnglishAccent(EnglishAccent.UK)
+        }
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("离线发音包", style = MaterialTheme.typography.titleMedium)
             if (state.voicePackInstalled) {
@@ -74,7 +81,11 @@ internal fun SpeechSettings(state: AppUiState, vm: AppViewModel) {
             }
             Text(player.status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick = { showLicenses = true }) { Text("离线语音开源许可") }
-            OutlinedButton(onClick = { player.speak("Apple. Tomato. Schedule. A fresh start every morning.") }, enabled = player.ready && !state.voicePackImporting) { Text("试听发音") }
+            Text("当前：${pronunciation.accent.label}", modifier = Modifier.align(androidx.compose.ui.Alignment.End))
+            Text("自动朗读跟随上方口音设置，下方按钮可临时对比试听。", style = MaterialTheme.typography.bodySmall)
+            PronunciationButtons(player.ready && !state.voicePackImporting, { accent ->
+                pronunciation.speak("Apple. Tomato. Schedule. A fresh start every morning.", accent)
+            })
         }
     }
 }

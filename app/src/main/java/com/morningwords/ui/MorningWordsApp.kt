@@ -473,10 +473,10 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
     }
     val card = state.feedbackCard ?: session.current ?: return
     val answerShown = state.answerVisible || session.session.mode == TestMode.PARENT
-    val speech = rememberSpeechPlayer(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled)
-    LaunchedEffect(card.id, speech) { speech.stop() }
-    LaunchedEffect(card.id, speech.ready, state.settings.autoPronounce, speech) {
-        if (speech.ready && state.settings.autoPronounce) speech.speak(card.word)
+    val pronunciation = rememberPronunciation(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled, card.id)
+    val speech = pronunciation.player
+    LaunchedEffect(card.id, state.settings.speechSource, state.settings.englishAccent, state.settings.autoPronounce, state.voicePackInstalled) {
+        if (state.settings.autoPronounce) pronunciation.speak(card.word, state.settings.englishAccent)
     }
     LaunchedEffect(speech.error) {
         speech.error?.let { vm.showMessage(it); speech.clearError() }
@@ -507,7 +507,8 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
             }
             Spacer(Modifier.height(16.dp))
             AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
-                StudyWordCard(animatedCard, answerShown, state.settings.largeFont, speech.ready, { speech.speak(animatedCard.word) })
+                StudyWordCard(animatedCard, answerShown, state.settings.largeFont, speech.ready,
+                    { pronunciation.speak(animatedCard.word, it) }, currentAccent = pronunciation.accent)
             }
             Column(Modifier.heightIn(max = 210.dp).verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (state.answerVisible && session.session.mode == TestMode.STUDENT) {

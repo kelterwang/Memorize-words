@@ -60,14 +60,20 @@ class StitchScreensTest {
             val saved = runBlocking { app.settingsRepository.settings.first() }
             assertEquals(SpeechSource.KOKORO, saved.speechSource)
             assertEquals(EnglishAccent.UK, saved.englishAccent)
-            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("试听发音"))
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("播放英音"))
             if (!vm.state.value.voicePackInstalled) {
-                compose.onNodeWithText("试听发音").assertIsNotEnabled()
+                compose.onNodeWithContentDescription("播放英音").assertIsNotEnabled()
             } else {
-                compose.onNodeWithText("试听发音").performClick()
+                compose.onNodeWithContentDescription("播放英音").performClick()
                 compose.waitUntil(20_000) { compose.onAllNodesWithText("Kokoro · 英音 · 离线 · 1 倍速").fetchSemanticsNodes().isNotEmpty() }
                 compose.onNodeWithText("Kokoro · 英音 · 离线 · 1 倍速").assertExists()
                 capture("kokoro-settings.png")
+                compose.onNodeWithContentDescription("播放美音").performClick()
+                compose.waitUntil(5_000) { compose.onAllNodesWithText("当前：美音").fetchSemanticsNodes().isNotEmpty() }
+                compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("英音 · British English"))
+                compose.onNodeWithText("英音 · British English").performClick()
+                compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("当前：英音"))
+                compose.onNodeWithText("当前：英音").assertExists()
             }
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("手机自带发音"))
             compose.onNodeWithText("手机自带发音").performClick()
