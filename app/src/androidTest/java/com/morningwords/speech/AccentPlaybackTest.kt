@@ -22,21 +22,23 @@ class AccentPlaybackTest {
                         delay(50)
                     }
                 }
-                instrument.runOnMainSync { player.speak("Tomato. Schedule.") }
-                withTimeout(60_000) {
-                    while (true) {
-                        var done = false
-                        instrument.runOnMainSync {
-                            assertNull(player.error)
-                            done = player.completedPlaybackCount == 1
+                for ((index, word) in listOf("carsick", "homesick", "unique").withIndex()) {
+                    instrument.runOnMainSync { player.speak(word) }
+                    withTimeout(60_000) {
+                        while (true) {
+                            var done = false
+                            instrument.runOnMainSync {
+                                assertNull(player.error)
+                                done = player.completedPlaybackCount == index + 1
+                            }
+                            if (done) break
+                            delay(50)
                         }
-                        if (done) break
-                        delay(50)
                     }
-                }
-                instrument.runOnMainSync {
-                    assertFalse(player.isPlaying)
-                    assertTrue(player.status.contains(accent.label))
+                    instrument.runOnMainSync {
+                        assertFalse(player.isPlaying)
+                        assertTrue(player.status.contains(accent.label))
+                    }
                 }
             } finally { instrument.runOnMainSync { player.close() } }
         }

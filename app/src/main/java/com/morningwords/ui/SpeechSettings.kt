@@ -62,7 +62,7 @@ internal fun SpeechSettings(state: AppUiState, vm: AppViewModel) {
             Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed")) }, enabled = !state.voicePackImporting) {
                 Text(if (state.voicePackImporting) "正在导入并校验…" else "更换语音包（可选）")
             }
-            if (state.voicePackImporting) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("首次准备约需 200 MB 可用空间，请稍候。") }
+            if (state.voicePackImporting) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("正在准备内置语音，约需 400 MB 可用空间，请稍候。") }
             if (!state.voicePackInstalled && !state.voicePackImporting) {
                 TextButton(onClick = vm::prepareBundledVoice) { Text("重新准备内置语音") }
             }

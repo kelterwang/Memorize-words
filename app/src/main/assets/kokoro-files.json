@@ -358,7 +358,7 @@
   "espeak-ng-data/yue_dict": "1d26afa203034698772107abfff1b53acbee30434700a4d2b75dee98951588f8",
   "lexicon-gb-en.txt": "c4cbb37316f62210dff52718a7afcaae24f50c032cc75ab47ae67b831d1049e7",
   "lexicon-us-en.txt": "7daaab53a181be9885b853a8582bf1838186317e5dadacbcef9c426d6fa0da14",
-  "model.int8.onnx": "4b86207ef680e394d8343bee22dfc4c512e5c707c6d9578e3f35ab09bffd6b36",
+  "model.onnx": "b40f62b166ac8164b0627ef48a0b358eda0985e272fb03ef5252e7206305da11",
   "tokens.txt": "6ebb6bb288f20f3ae8d004d3c2ca27697da27c037d75e81a60e2a6a663f95425",
   "voices.bin": "1c5a5b983d3d50d8586d437a51f3faa2da7919ce76a013c081e65671a3447c29"
 }

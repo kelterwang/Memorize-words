@@ -24,7 +24,7 @@ internal fun extractVoicePack(input: InputStream, destination: File, expected: M
                     val count = zip.read(buffer)
                     if (count < 0) break
                     total += count
-                    require(total <= 350L * 1024 * 1024) { "语音包过大" }
+                    require(total <= 512L * 1024 * 1024) { "语音包过大" }
                     output.write(buffer, 0, count)
                     digest.update(buffer, 0, count)
                 }

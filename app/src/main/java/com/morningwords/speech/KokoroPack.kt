@@ -9,7 +9,8 @@ import java.io.SequenceInputStream
 import java.util.Collections
 
 class KokoroPack(private val context: Context) {
-    val directory = File(context.noBackupFilesDir, "kokoro-v1")
+    // A new directory forces upgrades from the numerically unstable int8 model.
+    val directory = File(context.noBackupFilesDir, "kokoro-v1-fp32")
     val installed: Boolean get() = File(directory, "installed").isFile
     companion object { private val installLock = Any() }
     fun ensureBundled() = synchronized(installLock) {
@@ -32,13 +33,14 @@ class KokoroPack(private val context: Context) {
             if (installed) return@synchronized // The pinned package is immutable; keep an already installed copy.
             directory.deleteRecursively()
             check(staging.renameTo(directory)) { "保存语音包失败，请检查存储空间" }
+            File(context.noBackupFilesDir, "kokoro-v1").deleteRecursively()
         } finally { staging.deleteRecursively() }
     }
     fun create(accent: EnglishAccent): OfflineTts {
         check(installed) { "内置语音尚未准备好，请稍后重试" }
         fun path(name: String) = File(directory, name).absolutePath
         return OfflineTts(config = OfflineTtsConfig(model = OfflineTtsModelConfig(
-            kokoro = OfflineTtsKokoroModelConfig(model = path("model.int8.onnx"), voices = path("voices.bin"),
+            kokoro = OfflineTtsKokoroModelConfig(model = path("model.onnx"), voices = path("voices.bin"),
                 tokens = path("tokens.txt"), dataDir = path("espeak-ng-data"),
                 lexicon = path(if (accent == EnglishAccent.US) "lexicon-us-en.txt" else "lexicon-gb-en.txt"),
                 lang = accent.kokoroLanguage), numThreads = 2,

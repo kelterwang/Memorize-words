@@ -11,6 +11,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class BundledVoiceStartupTest {
+    @Test fun oldInt8MarkerDoesNotSkipInstallingFp32Pack() {
+        val base = InstrumentationRegistry.getInstrumentation().targetContext
+        val root = java.io.File(base.cacheDir, "voice-upgrade-test").apply { deleteRecursively(); mkdirs() }
+        val context = object : android.content.ContextWrapper(base) {
+            override fun getNoBackupFilesDir() = root
+        }
+        try {
+            val legacy = java.io.File(root, "kokoro-v1").apply { mkdirs() }
+            java.io.File(legacy, "installed").writeText("1")
+            val pack = KokoroPack(context)
+            assertFalse(pack.installed)
+            pack.ensureBundled()
+            assertTrue(pack.installed)
+            assertTrue(java.io.File(pack.directory, "model.onnx").length() > 300_000_000)
+            assertFalse(legacy.exists())
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun applicationPreparesPackWithoutExternalFileAndSystemFallbackBecomesReady() = runBlocking {
         val instrument = InstrumentationRegistry.getInstrumentation()
         val app = instrument.targetContext.applicationContext as MorningWordsApplication

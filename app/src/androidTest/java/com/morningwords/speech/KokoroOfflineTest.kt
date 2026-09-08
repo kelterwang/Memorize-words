@@ -6,6 +6,27 @@ import org.junit.Test
 import java.io.File
 
 class KokoroOfflineTest {
+    @Test fun reportedAndCommonSingleWordsProduceAudibleSpeechInBothAccents() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val pack = KokoroPack(context)
+        pack.ensureBundled()
+        for (accent in listOf(EnglishAccent.UK, EnglishAccent.US)) {
+            val engine = pack.create(accent)
+            try {
+                for (word in listOf("carsick", "homesick", "unique", "apple", "cat", "book", "school", "water", "family", "beautiful", "tomato", "schedule", "comfortable", "a", "I")) {
+                    val audio = engine.generate(word, accent.speakerId, SPEECH_RATE)
+                    validateSpeechAudio(audio.samples, audio.sampleRate)
+                    val rms = kotlin.math.sqrt(audio.samples.map { it.toDouble() * it }.average())
+                    android.util.Log.i("WordAudioTest", "$accent $word samples=${audio.samples.size} rms=$rms")
+                    if (word in listOf("carsick", "homesick", "unique")) {
+                        assertTrue(audio.save(File(context.getExternalFilesDir(null), "${accent.name}-$word.wav").absolutePath))
+                    }
+                    assertTrue("$word has no audible speech: rms=$rms", rms > .005)
+                }
+            } finally { engine.release() }
+        }
+    }
+
     @Test fun realPackGeneratesBothAccentsWithoutNetworkPermission() {
         val instrument = InstrumentationRegistry.getInstrumentation()
         val context = instrument.targetContext
@@ -19,6 +40,7 @@ class KokoroOfflineTest {
                 assertTrue(engine.numSpeakers() > accent.speakerId)
                 val result = engine.generate("Tomato. Schedule. A fresh start every morning.", accent.speakerId, SPEECH_RATE)
                 assertEquals(24000, result.sampleRate)
+                validateSpeechAudio(result.samples, result.sampleRate)
                 assertTrue(result.samples.size > 24000)
                 assertTrue(result.samples.any { kotlin.math.abs(it) > .01f })
                 assertTrue(result.save(File(context.getExternalFilesDir(null), "kokoro-${accent.name}.wav").absolutePath))

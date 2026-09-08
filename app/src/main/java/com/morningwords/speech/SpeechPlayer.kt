@@ -122,7 +122,7 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
                         ensureActive()
                         val engine = native ?: KokoroPack(context).create(accent).also { native = it }
                         engine.generate(text, sid = accent.speakerId, speed = SPEECH_RATE).also {
-                            check(it.samples.isNotEmpty() && it.sampleRate > 0) { "Kokoro 无法生成该单词的发音" }
+                            validateSpeechAudio(it.samples, it.sampleRate)
                         }
                     }
                 }
