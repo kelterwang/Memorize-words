@@ -36,13 +36,15 @@ data class AppUiState(
     val feedbackCard: WordCard? = null,
     val importPreview: ImportPreview? = null,
     val selectedBatchIds: Set<Long> = emptySet(),
-    val selectedMode: TestMode = TestMode.STUDENT,
+    val modeOverride: TestMode? = null,
     val answerVisible: Boolean = false,
     val isBusy: Boolean = false,
     val message: String? = null,
     val voicePackInstalled: Boolean = false,
     val voicePackImporting: Boolean = false,
-)
+) {
+    val selectedMode: TestMode get() = modeOverride ?: settings.defaultTestMode
+}
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as MorningWordsApplication
@@ -67,7 +69,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         wrongWords = data.c,
                         settings = data.d,
                         selectedBatchIds = it.selectedBatchIds intersect availableBatchIds,
-                        selectedMode = if (it.selectedMode == TestMode.STUDENT) data.d.defaultTestMode else it.selectedMode,
+                        modeOverride = if (it.settings.defaultTestMode != data.d.defaultTestMode) null else it.modeOverride,
                     )
                 }
             }
@@ -119,7 +121,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         it.copy(selectedBatchIds = if (id in it.selectedBatchIds) it.selectedBatchIds - id else it.selectedBatchIds + id)
     }
 
-    fun selectMode(mode: TestMode) { mutable.update { it.copy(selectedMode = mode) } }
+    fun beginTestSetup() { mutable.update { it.copy(modeOverride = null) } }
+    fun selectMode(mode: TestMode) { mutable.update { it.copy(modeOverride = mode) } }
 
     fun startDaily(onReady: (Long) -> Unit) = launchBusy {
         when (val result = repository.createDailySession(mutable.value.selectedBatchIds.toList(), mutable.value.selectedMode)) {

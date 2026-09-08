@@ -420,6 +420,7 @@ private fun ImportScreen(preview: ImportPreview?, busy: Boolean, vm: AppViewMode
 
 @Composable
 private fun SetupScreen(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
+    LaunchedEffect(Unit) { vm.beginTestSetup() }
     Column(Modifier.fillMaxSize()) {
         BackHeader("设置晨测", nav)
         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -763,6 +764,7 @@ internal fun findExampleWordRanges(example: String, word: String): List<IntRange
 
 @Composable
 private fun WrongReviewSetup(state: AppUiState, vm: AppViewModel, nav: NavHostController) {
+    LaunchedEffect(Unit) { vm.beginTestSetup() }
     var selectedBatchIds by remember { mutableStateOf(emptySet<Long>()) }
     var selectionInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(state.wrongWordGroups) {
@@ -833,6 +835,7 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
             SettingsGroup("默认测试方式") {
                 SettingsChoice("学生自测", state.settings.defaultTestMode == TestMode.STUDENT) { vm.setMode(TestMode.STUDENT) }
                 HorizontalDivider(); SettingsChoice("家长考我", state.settings.defaultTestMode == TestMode.PARENT) { vm.setMode(TestMode.PARENT) }
+                Text("用于新建晨测和错词复测；进行中的测试保持原方式。", modifier = Modifier.padding(16.dp), color = StitchMuted, style = MaterialTheme.typography.bodySmall)
             }
         }
         item { SpeechSettings(state, vm) }
