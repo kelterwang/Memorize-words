@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
+import com.morningwords.speech.*
+import kotlinx.coroutines.flow.first
 import com.morningwords.BuildConfig
 import com.morningwords.MorningWordsApplication
 import com.morningwords.data.repository.SessionView
@@ -37,6 +39,45 @@ class StitchScreensTest {
         compose.waitForIdle()
         val file = File(app.getExternalFilesDir(null), name)
         file.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    @Test fun speechPreferencesPersistAndMissingPackDoesNotPretendReady() {
+        val previous = runBlocking { app.settingsRepository.settings.first() }
+        try {
+            runBlocking {
+                app.settingsRepository.setSpeechSource(SpeechSource.SYSTEM)
+                app.settingsRepository.setEnglishAccent(EnglishAccent.US)
+            }
+            lateinit var vm: AppViewModel
+            compose.runOnIdle { vm = ViewModelProvider(store, ViewModelProvider.AndroidViewModelFactory(app))[AppViewModel::class.java] }
+            compose.setContent { MorningWordsApp(vm) }
+            compose.onNodeWithText("我的").performClick()
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Kokoro 离线发音"))
+            compose.onNodeWithText("Kokoro 离线发音").performClick()
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("英音 · British English"))
+            compose.onNodeWithText("英音 · British English").performClick()
+            compose.waitUntil(5_000) { vm.state.value.settings.speechSource == SpeechSource.KOKORO && vm.state.value.settings.englishAccent == EnglishAccent.UK }
+            val saved = runBlocking { app.settingsRepository.settings.first() }
+            assertEquals(SpeechSource.KOKORO, saved.speechSource)
+            assertEquals(EnglishAccent.UK, saved.englishAccent)
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("试听发音"))
+            if (!vm.state.value.voicePackInstalled) {
+                compose.onNodeWithText("试听发音").assertIsNotEnabled()
+            } else {
+                compose.onNodeWithText("试听发音").performClick()
+                compose.waitUntil(20_000) { compose.onAllNodesWithText("正在合成离线发音…").fetchSemanticsNodes().isEmpty() }
+                compose.onNodeWithText("Kokoro · 离线 · 1 倍速").assertExists()
+                capture("kokoro-settings.png")
+            }
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("手机自带发音"))
+            compose.onNodeWithText("手机自带发音").performClick()
+            compose.waitUntil(5_000) { vm.state.value.settings.speechSource == SpeechSource.SYSTEM }
+        } finally {
+            runBlocking {
+                app.settingsRepository.setSpeechSource(previous.speechSource)
+                app.settingsRepository.setEnglishAccent(previous.englishAccent)
+            }
+        }
     }
 
     @Test fun settingsShowsInstalledVersion() {

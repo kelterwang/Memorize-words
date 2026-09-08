@@ -1,6 +1,10 @@
 package com.morningwords.ui
 
 import android.app.Application
+import android.net.Uri
+import com.morningwords.speech.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.morningwords.MorningWordsApplication
@@ -36,6 +40,8 @@ data class AppUiState(
     val answerVisible: Boolean = false,
     val isBusy: Boolean = false,
     val message: String? = null,
+    val voicePackInstalled: Boolean = false,
+    val voicePackImporting: Boolean = false,
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -47,6 +53,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { repository.repairImportedWordFields() }
+        refreshVoicePack()
         refreshHomeMessage()
         viewModelScope.launch {
             combine(repository.dashboard, repository.batches, repository.wrongWords, settingsRepository.settings) { dashboard, batches, wrong, settings ->
@@ -190,6 +197,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setMode(value: TestMode) = viewModelScope.launch { settingsRepository.setMode(value) }
     fun setAutoPronounce(value: Boolean) = viewModelScope.launch { settingsRepository.setAutoPronounce(value) }
     fun setShowAnswer(value: Boolean) = viewModelScope.launch { settingsRepository.setShowAnswer(value) }
+    fun setSpeechSource(value: SpeechSource) = viewModelScope.launch { settingsRepository.setSpeechSource(value) }
+    fun setEnglishAccent(value: EnglishAccent) = viewModelScope.launch { settingsRepository.setEnglishAccent(value) }
+    fun refreshVoicePack() { mutable.update { it.copy(voicePackInstalled = KokoroPack(app).installed) } }
+    fun importVoicePack(uri: Uri) {
+        if (mutable.value.voicePackImporting) return
+        mutable.update { it.copy(voicePackImporting = true) }
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val input = app.contentResolver.openInputStream(uri) ?: error("无法读取语音包")
+                    input.use { KokoroPack(app).install(it) }
+                }
+                refreshVoicePack()
+                settingsRepository.setSpeechSource(SpeechSource.KOKORO)
+                showMessage("Kokoro 语音包已导入，可离线使用")
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                showMessage(e.message ?: "导入失败，请检查文件和剩余空间")
+            } finally { mutable.update { it.copy(voicePackImporting = false) } }
+        }
+    }
+
     fun setLargeFont(value: Boolean) = viewModelScope.launch { settingsRepository.setLargeFont(value) }
     fun clearMessage() = mutable.update { it.copy(message = null) }
     fun showMessage(message: String) = mutable.update { it.copy(message = message) }

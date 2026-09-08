@@ -2,9 +2,6 @@
 
 package com.morningwords.ui
 
-import android.media.AudioAttributes
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
@@ -475,65 +472,13 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
     }
     val card = state.feedbackCard ?: session.current ?: return
     val answerShown = state.answerVisible || session.session.mode == TestMode.PARENT
-    val context = LocalContext.current.applicationContext
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var ttsReady by remember { mutableStateOf(false) }
-    var speechError by remember { mutableStateOf<String?>(null) }
-    DisposableEffect(context) {
-        val engine = TextToSpeech(context) { status ->
-            val active = tts
-            if (status == TextToSpeech.SUCCESS && active != null) {
-                val locale = when {
-                    active.isLanguageAvailable(Locale.US) >= TextToSpeech.LANG_AVAILABLE -> Locale.US
-                    active.isLanguageAvailable(Locale.ENGLISH) >= TextToSpeech.LANG_AVAILABLE -> Locale.ENGLISH
-                    else -> null
-                }
-                ttsReady = locale != null && active.setLanguage(locale) >= TextToSpeech.LANG_AVAILABLE
-                if (ttsReady) {
-                    active.voices
-                        ?.filter { voice -> voice.locale.language == Locale.ENGLISH.language }
-                        ?.sortedWith(
-                            compareByDescending<android.speech.tts.Voice> { it.locale.country == Locale.US.country }
-                                .thenByDescending { it.quality }
-                                .thenBy { it.latency }
-                        )
-                        ?.firstOrNull()
-                        ?.let { active.voice = it }
-                }
-                if (!ttsReady) speechError = "设备缺少可用的英文语音，请在系统设置中安装文字转语音服务"
-            } else {
-                speechError = "文字转语音服务初始化失败，请检查系统语音设置"
-            }
-        }
-        engine.setSpeechRate(0.72f)
-        engine.setPitch(1.0f)
-        engine.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build()
-        )
-        engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
-            override fun onDone(utteranceId: String?) = Unit
-            @Deprecated("Deprecated by Android")
-            override fun onError(utteranceId: String?) { speechError = "发音播放失败，请检查媒体音量和系统语音服务" }
-        })
-        tts = engine
-        onDispose { engine.stop(); engine.shutdown(); tts = null }
+    val speech = rememberSpeechPlayer(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled)
+    LaunchedEffect(card.id, speech.ready, state.settings.autoPronounce, speech) {
+        speech.stop()
+        if (speech.ready && state.settings.autoPronounce) speech.speak(card.word)
     }
-    fun speak() {
-        if (!ttsReady) {
-            speechError = "发音暂不可用，请检查媒体音量和系统文字转语音服务"
-        } else if (tts?.speak(card.word, TextToSpeech.QUEUE_FLUSH, null, "word-${card.id}-${System.nanoTime()}") == TextToSpeech.ERROR) {
-            speechError = "发音播放失败，请重试"
-        }
-    }
-    LaunchedEffect(card.id, ttsReady, state.settings.autoPronounce) {
-        if (ttsReady && state.settings.autoPronounce) speak()
-    }
-    LaunchedEffect(speechError) {
-        speechError?.let { vm.showMessage(it); speechError = null }
+    LaunchedEffect(speech.error) {
+        speech.error?.let { vm.showMessage(it); speech.clearError() }
     }
     var confirmAbandon by remember { mutableStateOf(false) }
     if (confirmAbandon) {
@@ -561,7 +506,7 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
             }
             Spacer(Modifier.height(16.dp))
             AnimatedContent(card, label = "word-card", modifier = Modifier.weight(1f)) { animatedCard ->
-                StudyWordCard(animatedCard, answerShown, state.settings.largeFont, ttsReady, ::speak)
+                StudyWordCard(animatedCard, answerShown, state.settings.largeFont, speech.ready, { speech.speak(animatedCard.word) })
             }
             Column(Modifier.heightIn(max = 210.dp).verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (state.answerVisible && session.session.mode == TestMode.STUDENT) {
@@ -890,6 +835,7 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
                 HorizontalDivider(); SettingsChoice("家长考我", state.settings.defaultTestMode == TestMode.PARENT) { vm.setMode(TestMode.PARENT) }
             }
         }
+        item { SpeechSettings(state, vm) }
         item {
             SettingsGroup("测试体验") {
                 SettingsSwitch("自动朗读英文", state.settings.autoPronounce, vm::setAutoPronounce)
@@ -905,10 +851,10 @@ private fun SettingsScreen(state: AppUiState, vm: AppViewModel) {
     }
 }
 
-@Composable private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+@Composable internal fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column { Text(title, style = MaterialTheme.typography.labelLarge, color = Sage, modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)); Surface(shape = RoundedCornerShape(20.dp), color = Paper) { Column(content = content) } }
 }
-@Composable private fun SettingsChoice(label: String, selected: Boolean, action: () -> Unit) { Row(Modifier.fillMaxWidth().clickable(onClick = action).padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); RadioButton(selected, action) } }
+@Composable internal fun SettingsChoice(label: String, selected: Boolean, action: () -> Unit) { Row(Modifier.fillMaxWidth().clickable(onClick = action).padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); RadioButton(selected, action) } }
 @Composable private fun SettingsSwitch(label: String, checked: Boolean, action: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(checked, action) } }
 
 @Composable private fun PageHeader(title: String, subtitle: String) { Column(Modifier.padding(vertical = 20.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); Text(subtitle, color = Ink.copy(.55f), modifier = Modifier.padding(top = 4.dp)) } }

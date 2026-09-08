@@ -4,6 +4,12 @@
 
 面向高中生的离线 Android 单词晨测 App。产品严格以仓库中的 `设计文档.md` 与 `技术方案文档.md` 为实现基线。
 
+## 离线英文发音（v1.2.0）
+
+“我的”中可选择手机自带发音或 Kokoro，并切换美音/英音；两种来源均采用 1 倍速。Kokoro 需先导入配套 `Kokoro-English-v1.0.zip`（约 121 MB），之后无需联网；美音使用 Heart，英音使用 Emma。ZIP 不需要手动解压。手机声音取决于系统已安装的数据，缺少对应口音会提示。
+
+语音包的来源、生成方法与测试命令见 [离线发音说明](离线发音说明.md)。
+
 ## 安卓安装包
 
 [下载 v1.1.0 测试版 APK](https://github.com/kelterwang/Memorize-words/releases/download/v1.1.0/MorningWords-1.1.0.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.1.0)

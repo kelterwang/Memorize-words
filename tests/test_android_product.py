@@ -92,12 +92,12 @@ class AndroidProductStructureTest(unittest.TestCase):
         self.assertIn("submitAnswer(if (isCorrect) TestResult.KNOW else TestResult.UNKNOWN)", view_model)
 
     def test_pronunciation_uses_clear_speech_configuration(self) -> None:
-        source = (ROOT / "app/src/main/java/com/morningwords/ui/MorningWordsApp.kt").read_text(encoding="utf-8")
+        source = (ROOT / "app/src/main/java/com/morningwords/speech/SpeechPlayer.kt").read_text(encoding="utf-8")
         for configuration in [
-            "it.locale.country == Locale.US.country",
+            "it.locale.country == accent.locale.country",
             ".thenByDescending { it.quality }",
-            "engine.setSpeechRate(0.72f)",
-            "AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY",
+            "tts.setSpeechRate(SPEECH_RATE)",
+            "AudioAttributes.USAGE_MEDIA",
             "AudioAttributes.CONTENT_TYPE_SPEECH",
         ]:
             with self.subTest(configuration=configuration):

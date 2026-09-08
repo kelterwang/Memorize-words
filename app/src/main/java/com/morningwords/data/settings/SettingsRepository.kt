@@ -1,6 +1,8 @@
 package com.morningwords.data.settings
 
 import android.content.Context
+import com.morningwords.speech.SpeechSource
+import com.morningwords.speech.EnglishAccent
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.morningwords.domain.model.TestMode
@@ -18,10 +20,14 @@ data class AppSettings(
     val autoPronounce: Boolean = true,
     val showAnswerAfterKnow: Boolean = true,
     val largeFont: Boolean = false,
+    val speechSource: SpeechSource = SpeechSource.SYSTEM,
+    val englishAccent: EnglishAccent = EnglishAccent.US,
 )
 
 class SettingsRepository(private val context: Context) {
     private object Keys {
+        val speechSource = stringPreferencesKey("speechSource")
+        val englishAccent = stringPreferencesKey("englishAccent")
         val mode = stringPreferencesKey("defaultTestMode")
         val autoPronounce = booleanPreferencesKey("autoPronounce")
         val showAnswer = booleanPreferencesKey("showAnswerAfterKnow")
@@ -37,8 +43,13 @@ class SettingsRepository(private val context: Context) {
             autoPronounce = values[Keys.autoPronounce] ?: true,
             showAnswerAfterKnow = values[Keys.showAnswer] ?: true,
             largeFont = values[Keys.largeFont] ?: false,
+            speechSource = runCatching { SpeechSource.valueOf(values[Keys.speechSource] ?: "SYSTEM") }.getOrDefault(SpeechSource.SYSTEM),
+            englishAccent = runCatching { EnglishAccent.valueOf(values[Keys.englishAccent] ?: "US") }.getOrDefault(EnglishAccent.US),
         )
     }
+
+    suspend fun setSpeechSource(value: SpeechSource) = context.dataStore.edit { it[Keys.speechSource] = value.name }
+    suspend fun setEnglishAccent(value: EnglishAccent) = context.dataStore.edit { it[Keys.englishAccent] = value.name }
 
     suspend fun setMode(value: TestMode) = context.dataStore.edit { it[Keys.mode] = value.name }
     suspend fun setAutoPronounce(value: Boolean) = context.dataStore.edit { it[Keys.autoPronounce] = value }
