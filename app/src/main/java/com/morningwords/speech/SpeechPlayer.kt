@@ -2,7 +2,8 @@ package com.morningwords.speech
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.MediaPlayer
+import android.media.AudioTrack
+import android.media.AudioFormat
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
@@ -14,7 +15,6 @@ import com.k2fsa.sherpa.onnx.OfflineTts
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.File
 
 /** One screen owns playback. Native work is serialized and never runs on the UI thread. */
 class SpeechPlayer(context: Context, private val source: SpeechSource, private val accent: EnglishAccent) {
@@ -25,17 +25,17 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
     private var native: OfflineTts? = null
     companion object { private val nativeMutex = Mutex() }
     private var system: TextToSpeech? = null
-    private var media: MediaPlayer? = null
     private var request: Job? = null
     private var useKokoro = source == SpeechSource.KOKORO
     private var lastText: String? = null
     private var utterance: String? = null
-    private var kokoroStatus = "Kokoro · 离线 · 1 倍速"
+    private var kokoroStatus = "Kokoro · ${accent.label} · 离线 · 1 倍速"
     private var active = true
     private var closed = false
     private var playbackGeneration = 0
     private var serial = 0
-    private var audioFile: File? = null
+    var completedPlaybackCount by mutableStateOf(0); private set
+    var isPlaying by mutableStateOf(false); private set
     var ready by mutableStateOf(false); private set
     var status by mutableStateOf("正在准备发音…"); private set
     var error by mutableStateOf<String?>(null); private set
@@ -55,7 +55,7 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
                     @Suppress("DEPRECATION")
                     override fun current() = SystemVoiceSelection(tts.voice?.locale ?: tts.language, tts.voice?.isNetworkConnectionRequired)
                 }, accent)
-                if (selection == null) { prepareKokoro("手机没有可用的英文语音"); return@post }
+                if (selection == null) { prepareKokoro("手机未提供可确认的${accent.label}"); return@post }
                 tts.setSpeechRate(SPEECH_RATE)
                 tts.setPitch(1f)
                 tts.setAudioAttributes(attributes())
@@ -83,7 +83,7 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
         ready = false
         system?.stop()
         utterance = null
-        kokoroStatus = if (reason == null) "Kokoro · 离线 · 1 倍速" else "$reason，已改用内置 Kokoro · 1 倍速"
+        kokoroStatus = if (reason == null) "Kokoro · ${accent.label} · 离线 · 1 倍速" else "$reason，已改用内置 Kokoro ${accent.label} · 1 倍速"
         status = "正在准备内置离线语音…"
         val generation = playbackGeneration
         scope.launch {
@@ -116,42 +116,67 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
         }
         status = "正在合成离线发音…"
         request = scope.launch {
-            val output = File.createTempFile("kokoro-", ".wav", context.cacheDir)
             try {
-                withContext(Dispatchers.IO) {
+                val audio = withContext(Dispatchers.IO) {
                     mutex.withLock {
                         ensureActive()
                         val engine = native ?: KokoroPack(context).create(accent).also { native = it }
-                        val audio = engine.generate(text, sid = accent.speakerId, speed = SPEECH_RATE)
-                        check(audio.samples.isNotEmpty() && audio.save(output.absolutePath)) { "Kokoro 无法生成该单词的发音" }
+                        engine.generate(text, sid = accent.speakerId, speed = SPEECH_RATE).also {
+                            check(it.samples.isNotEmpty() && it.sampleRate > 0) { "Kokoro 无法生成该单词的发音" }
+                        }
                     }
                 }
                 ensureActive()
-                audioFile = output
-                media = MediaPlayer().apply {
-                    setAudioAttributes(attributes())
-                    setDataSource(output.absolutePath)
-                    setOnCompletionListener { stop(); status = kokoroStatus }
-                    setOnErrorListener { _, _, _ -> stop(); fail("离线音频播放失败，请重试"); true }
-                    prepare()
-                    start()
-                }
+                isPlaying = true
+                status = "正在播放${accent.label}…"
+                withContext(Dispatchers.IO) { playPcm(audio.samples, audio.sampleRate) }
+                ensureActive()
+                completedPlaybackCount++
+                isPlaying = false
                 status = kokoroStatus
             } catch (e: Exception) {
-                output.delete()
-                if (e is CancellationException) throw e
-                fail("Kokoro 发音失败：${e.message ?: "请重新选择语音包"}")
+                if (e is CancellationException && e !is TimeoutCancellationException) throw e
+                isPlaying = false
+                fail("Kokoro 发音失败：${e.message ?: "请重试"}")
             }
         }
     }
+    private suspend fun playPcm(samples: FloatArray, sampleRate: Int) {
+        val pcm = toPcm16(samples)
+        val minSize = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        check(minSize > 0) { "手机不支持该音频格式" }
+        val bufferBytes = maxOf(minSize, sampleRate / 10 * 2)
+        val track = AudioTrack.Builder().setAudioAttributes(attributes())
+            .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
+            .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(bufferBytes).build()
+        try {
+            check(track.state == AudioTrack.STATE_INITIALIZED) { "无法打开手机音频输出" }
+            track.play()
+            var offset = 0
+            while (offset < pcm.size) {
+                currentCoroutineContext().ensureActive()
+                val written = track.write(pcm, offset, minOf(bufferBytes / 2, pcm.size - offset), AudioTrack.WRITE_BLOCKING)
+                check(written > 0) { "手机音频输出失败" }
+                offset += written
+            }
+            // Wait for queued frames to reach the output before releasing the track.
+            withTimeout(pcm.size.toLong() * 1000 / sampleRate + 5_000) {
+                while (track.playbackHeadPosition.toLong() < pcm.size) delay(20)
+            }
+        } finally {
+            if (track.state == AudioTrack.STATE_INITIALIZED) { track.pause(); track.flush() }
+            track.release()
+        }
+    }
+
     fun setActive(value: Boolean) { active = value; if (!value) stop() }
     fun stop() {
         playbackGeneration++
         utterance = null; lastText = null
         request?.cancel(); request = null
         system?.stop()
-        media?.release(); media = null
-        audioFile?.delete(); audioFile = null
+        isPlaying = false
         if (useKokoro && ready) status = kokoroStatus
     }
     fun close() {

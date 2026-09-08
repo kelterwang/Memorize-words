@@ -11,16 +11,25 @@ internal interface SystemVoiceAccess {
     fun current(): SystemVoiceSelection
 }
 
-/** Some Android engines expose no Voice list, but do support setLanguage(). */
-internal fun selectSystemVoice(access: SystemVoiceAccess, accent: EnglishAccent): SystemVoiceSelection? {
-    val candidates = access.voices().filter { it.locale.language in setOf("en", "eng") }
-        .sortedWith(compareByDescending<SystemVoiceOption> { it.locale.country == accent.locale.country }
-            .thenBy { it.network }.thenByDescending { it.quality })
-    for (voice in candidates) {
-        if (access.selectVoice(voice.name)) return SystemVoiceSelection(voice.locale, voice.network)
+internal fun matchesAccent(locale: Locale?, accent: EnglishAccent): Boolean =
+    locale?.language in setOf("en", "eng") && when (accent) {
+        EnglishAccent.US -> locale?.country in setOf("US", "USA")
+        EnglishAccent.UK -> locale?.country in setOf("GB", "GBR")
     }
-    for (locale in listOf(accent.locale, Locale.ENGLISH, Locale.US, Locale.UK).distinct()) {
-        if (access.selectLanguage(locale)) return access.current()
+
+/** A successful API call is insufficient: verify the engine's actual selected accent. */
+internal fun selectSystemVoice(access: SystemVoiceAccess, accent: EnglishAccent): SystemVoiceSelection? {
+    val candidates = access.voices().filter { matchesAccent(it.locale, accent) }
+        .sortedWith(compareBy<SystemVoiceOption> { it.network }.thenByDescending { it.quality })
+    for (voice in candidates) {
+        if (access.selectVoice(voice.name)) {
+            val actual = access.current()
+            if (matchesAccent(actual.locale, accent)) return actual
+        }
+    }
+    if (access.selectLanguage(accent.locale)) {
+        val actual = access.current()
+        if (matchesAccent(actual.locale, accent)) return actual
     }
     return null
 }

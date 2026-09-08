@@ -8,4 +8,6 @@ enum class EnglishAccent(val locale: Locale, val kokoroLanguage: String, val spe
     UK(Locale.UK, "en", 21),
 }
 
+val EnglishAccent.label: String get() = if (this == EnglishAccent.US) "美音" else "英音"
+
 const val SPEECH_RATE = 1.0f

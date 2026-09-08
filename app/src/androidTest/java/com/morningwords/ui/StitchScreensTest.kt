@@ -65,8 +65,8 @@ class StitchScreensTest {
                 compose.onNodeWithText("试听发音").assertIsNotEnabled()
             } else {
                 compose.onNodeWithText("试听发音").performClick()
-                compose.waitUntil(20_000) { compose.onAllNodesWithText("正在合成离线发音…").fetchSemanticsNodes().isEmpty() }
-                compose.onNodeWithText("Kokoro · 离线 · 1 倍速").assertExists()
+                compose.waitUntil(20_000) { compose.onAllNodesWithText("Kokoro · 英音 · 离线 · 1 倍速").fetchSemanticsNodes().isNotEmpty() }
+                compose.onNodeWithText("Kokoro · 英音 · 离线 · 1 倍速").assertExists()
                 capture("kokoro-settings.png")
             }
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("手机自带发音"))

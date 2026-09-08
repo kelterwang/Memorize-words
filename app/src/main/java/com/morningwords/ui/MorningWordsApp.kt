@@ -474,8 +474,8 @@ internal fun TestScreen(state: AppUiState, vm: AppViewModel, nav: NavHostControl
     val card = state.feedbackCard ?: session.current ?: return
     val answerShown = state.answerVisible || session.session.mode == TestMode.PARENT
     val speech = rememberSpeechPlayer(state.settings.speechSource, state.settings.englishAccent, state.voicePackInstalled)
+    LaunchedEffect(card.id, speech) { speech.stop() }
     LaunchedEffect(card.id, speech.ready, state.settings.autoPronounce, speech) {
-        speech.stop()
         if (speech.ready && state.settings.autoPronounce) speech.speak(card.word)
     }
     LaunchedEffect(speech.error) {
