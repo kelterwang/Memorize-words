@@ -16,7 +16,7 @@
 
 ## 安卓安装包
 
-[下载 v1.1.0 测试版 APK](https://github.com/kelterwang/Memorize-words/releases/download/v1.1.0/MorningWords-1.1.0.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.1.0)
+[下载 v1.2.4 完整版 APK（约 436 MB）](https://github.com/kelterwang/Memorize-words/releases/download/v1.2.4/MorningWords-1.2.4-Full.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.2.4)
 
 使用与 v1.0.0 相同的签名，可直接覆盖安装并保留学习数据。
 
