@@ -4,7 +4,7 @@
 
 面向高中生的离线 Android 单词晨测 App。产品严格以仓库中的 `设计文档.md` 与 `技术方案文档.md` 为实现基线。
 
-## 离线英文发音（v1.2.4）
+## 离线英文发音（v1.2.5）
 
 改用 FP32 Kokoro 模型，修复部分单词在 Emma 英音下合成无效音频而静音的问题。覆盖升级会自动更换模型，学习记录与设置保留。
 
@@ -16,7 +16,7 @@
 
 ## 安卓安装包
 
-[下载 v1.2.4 完整版 APK（约 436 MB）](https://github.com/kelterwang/Memorize-words/releases/download/v1.2.4/MorningWords-1.2.4-Full.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.2.4)
+[下载 v1.2.5 完整版 APK（约 436 MB）](https://github.com/kelterwang/Memorize-words/releases/download/v1.2.5/MorningWords-1.2.5-Full.apk) · [版本说明](https://github.com/kelterwang/Memorize-words/releases/tag/v1.2.5)
 
 使用与 v1.0.0 相同的签名，可直接覆盖安装并保留学习数据。
 
