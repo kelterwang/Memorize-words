@@ -26,6 +26,15 @@ def package(source: Path, output: Path):
             info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, data)
     (ROOT / 'app/src/main/assets/kokoro-files.json').write_text(json.dumps(hashes, indent=2) + '\n')
+    bundled = ROOT / 'app/src/main/assets/kokoro-bundled'
+    bundled.mkdir(parents=True, exist_ok=True)
+    for old in bundled.glob('*.part'):
+        old.unlink()
+    with output.open('rb') as stream:
+        index = 0
+        while chunk := stream.read(48 * 1024 * 1024):
+            (bundled / f'{index:03d}.part').write_bytes(chunk)
+            index += 1
     print(output, output.stat().st_size, hashlib.sha256(output.read_bytes()).hexdigest())
 
 if __name__ == '__main__':

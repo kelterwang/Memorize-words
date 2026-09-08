@@ -27,7 +27,13 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
     private var system: TextToSpeech? = null
     private var media: MediaPlayer? = null
     private var request: Job? = null
+    private var useKokoro = source == SpeechSource.KOKORO
+    private var lastText: String? = null
+    private var utterance: String? = null
+    private var kokoroStatus = "Kokoro · 离线 · 1 倍速"
+    private var active = true
     private var closed = false
+    private var playbackGeneration = 0
     private var serial = 0
     private var audioFile: File? = null
     var ready by mutableStateOf(false); private set
@@ -35,33 +41,62 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
     var error by mutableStateOf<String?>(null); private set
 
     init {
-        if (source == SpeechSource.KOKORO) {
-            ready = KokoroPack(this.context).installed
-            status = if (ready) "Kokoro · 离线 · 1 倍速" else "请先导入 Kokoro 离线语音包"
+        if (useKokoro) {
+            prepareKokoro()
         } else {
             system = TextToSpeech(this.context) { result -> main.post {
                 if (closed) return@post
                 val tts = system ?: return@post
-                if (result != TextToSpeech.SUCCESS) { fail("手机语音初始化失败，请检查系统文字转语音设置"); return@post }
-                val voice = tts.voices.orEmpty().filter {
-                    it.locale.language == "en" && it.locale.country == accent.locale.country
-                }.sortedWith(compareBy<android.speech.tts.Voice> { it.isNetworkConnectionRequired }.thenByDescending { it.quality }).firstOrNull()
-                if (voice == null || tts.setVoice(voice) == TextToSpeech.ERROR) {
-                    fail("手机缺少${if (accent == EnglishAccent.US) "美音" else "英音"}语音，请安装对应语音数据或切换口音")
-                    return@post
-                }
+                if (result != TextToSpeech.SUCCESS) { prepareKokoro("手机语音未能启动"); return@post }
+                val selection = selectSystemVoice(object : SystemVoiceAccess {
+                    override fun voices() = tts.voices.orEmpty().map { SystemVoiceOption(it.name, it.locale, it.isNetworkConnectionRequired, it.quality) }
+                    override fun selectVoice(name: String) = tts.voices.orEmpty().firstOrNull { it.name == name }?.let { tts.setVoice(it) != TextToSpeech.ERROR } ?: false
+                    override fun selectLanguage(locale: java.util.Locale) = tts.setLanguage(locale) >= TextToSpeech.LANG_AVAILABLE
+                    @Suppress("DEPRECATION")
+                    override fun current() = SystemVoiceSelection(tts.voice?.locale ?: tts.language, tts.voice?.isNetworkConnectionRequired)
+                }, accent)
+                if (selection == null) { prepareKokoro("手机没有可用的英文语音"); return@post }
                 tts.setSpeechRate(SPEECH_RATE)
                 tts.setPitch(1f)
                 tts.setAudioAttributes(attributes())
                 ready = true
-                status = if (voice.isNetworkConnectionRequired) "手机发音 · 此声音需要联网 · 1 倍速" else "手机发音 · 离线声音 · 1 倍速"
+                val actualAccent = when (selection.locale?.country) {
+                    "US", "USA" -> "美音"
+                    "GB", "GBR" -> "英音"
+                    else -> "系统英文口音"
+                }
+                val connection = when (selection.network) { true -> "需联网"; false -> "离线"; null -> "联网需求由系统决定" }
+                status = "手机发音 · $actualAccent · $connection · 1 倍速"
             } }
             system?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) = Unit
                 override fun onDone(utteranceId: String?) = Unit
                 @Deprecated("Deprecated by Android")
-                override fun onError(utteranceId: String?) { main.post { if (!closed) fail("手机发音失败，请检查语音数据和媒体音量") } }
+                override fun onError(utteranceId: String?) { main.post {
+                    if (!closed && utteranceId == utterance && lastText != null) prepareKokoro("手机语音播放失败", lastText)
+                } }
             })
+        }
+    }
+    private fun prepareKokoro(reason: String? = null, replay: String? = null) {
+        useKokoro = true
+        ready = false
+        system?.stop()
+        utterance = null
+        kokoroStatus = if (reason == null) "Kokoro · 离线 · 1 倍速" else "$reason，已改用内置 Kokoro · 1 倍速"
+        status = "正在准备内置离线语音…"
+        val generation = playbackGeneration
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { KokoroPack(context).ensureBundled() }
+                if (closed) return@launch
+                ready = true
+                status = kokoroStatus
+                if (replay != null && generation == playbackGeneration) speak(replay)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                fail("内置语音准备失败，请在“我的”重试：${e.message}")
+            }
         }
     }
     private fun attributes() = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
@@ -69,11 +104,14 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
     private fun fail(message: String) { error = message; status = message }
     fun clearError() { error = null }
     fun speak(text: String) {
+        if (closed || !active) return
         stop()
         error = null
         if (!ready) { fail(status); return }
-        if (source == SpeechSource.SYSTEM) {
-            if (system?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "word-${++serial}") == TextToSpeech.ERROR) fail("手机发音失败，请重试")
+        lastText = text
+        if (!useKokoro) {
+            utterance = "word-${++serial}"
+            if (system?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utterance) == TextToSpeech.ERROR) prepareKokoro("手机语音播放失败", text)
             return
         }
         status = "正在合成离线发音…"
@@ -93,12 +131,12 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
                 media = MediaPlayer().apply {
                     setAudioAttributes(attributes())
                     setDataSource(output.absolutePath)
-                    setOnCompletionListener { stop(); status = "Kokoro · 离线 · 1 倍速" }
+                    setOnCompletionListener { stop(); status = kokoroStatus }
                     setOnErrorListener { _, _, _ -> stop(); fail("离线音频播放失败，请重试"); true }
                     prepare()
                     start()
                 }
-                status = "Kokoro · 离线 · 1 倍速"
+                status = kokoroStatus
             } catch (e: Exception) {
                 output.delete()
                 if (e is CancellationException) throw e
@@ -106,12 +144,15 @@ class SpeechPlayer(context: Context, private val source: SpeechSource, private v
             }
         }
     }
+    fun setActive(value: Boolean) { active = value; if (!value) stop() }
     fun stop() {
+        playbackGeneration++
+        utterance = null; lastText = null
         request?.cancel(); request = null
         system?.stop()
         media?.release(); media = null
         audioFile?.delete(); audioFile = null
-        if (source == SpeechSource.KOKORO && ready) status = "Kokoro · 离线 · 1 倍速"
+        if (useKokoro && ready) status = kokoroStatus
     }
     fun close() {
         closed = true

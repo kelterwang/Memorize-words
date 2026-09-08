@@ -55,7 +55,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { repository.repairImportedWordFields() }
-        refreshVoicePack()
+        prepareBundledVoice()
         refreshHomeMessage()
         viewModelScope.launch {
             combine(repository.dashboard, repository.batches, repository.wrongWords, settingsRepository.settings) { dashboard, batches, wrong, settings ->
@@ -203,6 +203,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setSpeechSource(value: SpeechSource) = viewModelScope.launch { settingsRepository.setSpeechSource(value) }
     fun setEnglishAccent(value: EnglishAccent) = viewModelScope.launch { settingsRepository.setEnglishAccent(value) }
     fun refreshVoicePack() { mutable.update { it.copy(voicePackInstalled = KokoroPack(app).installed) } }
+    fun prepareBundledVoice() {
+        refreshVoicePack()
+        if (mutable.value.voicePackInstalled || mutable.value.voicePackImporting) return
+        mutable.update { it.copy(voicePackImporting = true) }
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) { KokoroPack(app).ensureBundled() }
+                refreshVoicePack()
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                showMessage("内置语音准备失败：${e.message ?: "请检查存储空间并重试"}")
+            } finally { mutable.update { it.copy(voicePackImporting = false) } }
+        }
+    }
+
     fun importVoicePack(uri: Uri) {
         if (mutable.value.voicePackImporting) return
         mutable.update { it.copy(voicePackImporting = true) }

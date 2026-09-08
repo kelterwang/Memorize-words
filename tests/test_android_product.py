@@ -94,8 +94,8 @@ class AndroidProductStructureTest(unittest.TestCase):
     def test_pronunciation_uses_clear_speech_configuration(self) -> None:
         source = (ROOT / "app/src/main/java/com/morningwords/speech/SpeechPlayer.kt").read_text(encoding="utf-8")
         for configuration in [
-            "it.locale.country == accent.locale.country",
-            ".thenByDescending { it.quality }",
+            "selectSystemVoice",
+            "tts.setLanguage(locale)",
             "tts.setSpeechRate(SPEECH_RATE)",
             "AudioAttributes.USAGE_MEDIA",
             "AudioAttributes.CONTENT_TYPE_SPEECH",

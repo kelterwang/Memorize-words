@@ -22,7 +22,11 @@ internal fun rememberSpeechPlayer(source: SpeechSource, accent: EnglishAccent, i
     val player = remember(source, accent, installed) { SpeechPlayer(context, source, accent) }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(player, owner) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) player.stop() }
+        player.setActive(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) player.setActive(true)
+            if (event == Lifecycle.Event.ON_STOP) player.setActive(false)
+        }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer); player.close() }
     }
@@ -51,14 +55,17 @@ internal fun SpeechSettings(state: AppUiState, vm: AppViewModel) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("离线发音包", style = MaterialTheme.typography.titleMedium)
             if (state.voicePackInstalled) {
-                Text("Kokoro v1.0 英语包 · 已导入\n美音 Heart / 英音 Emma", style = MaterialTheme.typography.bodyMedium)
+                Text("Kokoro v1.0 英语包 · 已内置\n美音 Heart / 英音 Emma", style = MaterialTheme.typography.bodyMedium)
             } else {
-                Text("尚未导入 Kokoro 语音包。选择配套 ZIP 文件后，美音、英音均可断网使用。", style = MaterialTheme.typography.bodyMedium)
+                Text("安装包已包含完整语音，首次启动正在自动准备，美音、英音均可断网使用。", style = MaterialTheme.typography.bodyMedium)
             }
             Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed")) }, enabled = !state.voicePackImporting) {
-                Text(if (state.voicePackImporting) "正在导入并校验…" else "选择离线语音包（ZIP）")
+                Text(if (state.voicePackImporting) "正在导入并校验…" else "更换语音包（可选）")
             }
-            if (state.voicePackImporting) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("请保持 App 打开，导入约需 200 MB 可用空间。") }
+            if (state.voicePackImporting) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("首次准备约需 200 MB 可用空间，请稍候。") }
+            if (!state.voicePackInstalled && !state.voicePackImporting) {
+                TextButton(onClick = vm::prepareBundledVoice) { Text("重新准备内置语音") }
+            }
             if (state.settings.speechSource == SpeechSource.SYSTEM) {
                 TextButton(onClick = {
                     runCatching { context.startActivity(Intent("com.android.settings.TTS_SETTINGS")) }

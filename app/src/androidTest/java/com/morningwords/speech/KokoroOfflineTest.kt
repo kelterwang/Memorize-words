@@ -2,18 +2,16 @@ package com.morningwords.speech
 
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
 class KokoroOfflineTest {
     @Test fun realPackGeneratesBothAccentsWithoutNetworkPermission() {
         val instrument = InstrumentationRegistry.getInstrumentation()
-        val path = InstrumentationRegistry.getArguments().getString("kokoroPack")
-        assumeTrue("Pass -Pandroid.testInstrumentationRunnerArguments.kokoroPack=/data/local/tmp/Kokoro-English-v1.0.zip for the real model integration check", path != null)
         val context = instrument.targetContext
         val pack = KokoroPack(context)
-        File(path!!).inputStream().use { pack.install(it) }
+        // Use only APK assets: no external ZIP, download or test fixture is installed.
+        pack.ensureBundled()
         assertTrue(pack.installed)
         val outputs = EnglishAccent.entries.map { accent ->
             val engine = pack.create(accent)
